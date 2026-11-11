@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>한수RunLearn 도트 러너 만들기</title>
+<meta name="description" content="한양도성을 함께 달릴 나만의 도트 러너를 만들어 보세요. Run, Learn Hansu!">
+<meta property="og:title" content="한수RunLearn 도트 러너 만들기">
+<meta property="og:description" content="한양도성을 함께 달릴 나만의 도트 러너를 만들어 보세요. Run, Learn Hansu!">
+<meta name="theme-color" content="#2f8f7a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1f1720;--paper:#f4ecdc;--paper2:#fffaf0;--green:#2f8f7a;--red:#c8463a;--yellow:#f5c518;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:'Do Hyeon',system-ui,sans-serif;
+  background-image:linear-gradient(rgba(31,23,32,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(31,23,32,.05) 1px,transparent 1px);
+  background-size:16px 16px;}
+.wrap{max-width:1280px;margin:0 auto;padding:22px 20px 48px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.logo{display:flex;align-items:baseline;gap:6px;line-height:1}
+.logo .ko{font-family:'Black Han Sans',sans-serif;font-size:42px}
+.logo .en{font-family:'Silkscreen',monospace;font-weight:700;font-size:34px;color:var(--green)}
+.sub{font-size:20px;margin-top:8px}
+.slogan{font-family:'Silkscreen',monospace;font-weight:700;font-size:14px;background:var(--ink);color:#fff;padding:7px 12px;letter-spacing:.5px}
+.layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(330px,1fr);gap:24px;align-items:start}
+@media (max-width:920px){.layout{grid-template-columns:1fr}}
+.box{background:var(--paper2);border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink)}
+.stage-box{position:relative;overflow:hidden}
+#stage{display:block;width:100%;height:auto;aspect-ratio:16/9;image-rendering:pixelated;background:#86ccf3}
+.bar{display:flex;flex-wrap:wrap;gap:10px;padding:12px;border-top:4px solid var(--ink);background:#fff;align-items:center}
+.btn{font-family:inherit;font-size:18px;line-height:1.1;color:var(--ink);background:#fff;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);padding:9px 14px;cursor:pointer;min-height:46px;touch-action:manipulation}
+.btn:hover{background:#fff4cf}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn.primary{background:var(--green);color:#fff}
+.btn.primary:hover{background:#287c6a}
+.btn.danger{background:var(--red);color:#fff}
+.btn[aria-pressed="true"]{background:var(--ink);color:#fff}
+.btn:focus-visible,.tab:focus-visible,.sw:focus-visible,.card:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
+.seg{display:inline-flex;box-shadow:3px 3px 0 var(--ink)}
+.seg .btn{box-shadow:none;margin-left:-3px}
+.seg .btn:first-child{margin-left:0}
+.seg .btn:active{transform:none}
+.spacer{flex:1}
+.fs-exit{display:none;position:absolute;top:14px;right:14px;z-index:2}
+.stage-box:fullscreen{display:flex;flex-direction:column;justify-content:center;background:#0e0b12;border:0;box-shadow:none}
+.stage-box:fullscreen #stage{width:100%;max-height:100vh;object-fit:contain}
+.stage-box:fullscreen .bar{display:none}
+.stage-box:fullscreen .fs-exit{display:block}
+.tip{margin:14px 2px 0;font-size:17px;opacity:.8}
+
+.panel{overflow:hidden}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:4px solid var(--ink)}
+.tab{font-family:inherit;font-size:18px;padding:13px 4px;border:0;border-right:3px solid var(--ink);background:#efe5cf;cursor:pointer;color:var(--ink)}
+.tab:last-child{border-right:0}
+.tab[aria-selected="true"]{background:var(--yellow)}
+.tabpanel{padding:18px 18px 4px;display:none;min-height:330px}
+.tabpanel.on{display:block}
+.group{margin-bottom:18px}
+.group h3{margin:0 0 9px;font-size:19px;font-weight:400;display:flex;align-items:center;gap:8px}
+.group h3::before{content:'';width:8px;height:8px;background:var(--ink);flex:none}
+.sws{display:flex;flex-wrap:wrap;gap:9px}
+.sw{width:42px;height:42px;border:3px solid var(--ink);cursor:pointer;padding:0;position:relative;touch-action:manipulation}
+.sw[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:3px}
+.sw[aria-pressed="true"]::after{content:'';position:absolute;left:50%;top:50%;width:10px;height:10px;transform:translate(-50%,-50%);background:#fff;box-shadow:0 0 0 3px var(--ink)}
+.sw.custom{background:conic-gradient(#e5484d,#f5c518,#3fae5a,#20a7a0,#3a7bd5,#7e57c2,#f07fb0,#e5484d)}
+.sw.custom input{opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer;border:0;padding:0}
+.opts{display:flex;flex-wrap:wrap;gap:9px}
+.opts .btn{font-size:17px;min-height:44px;padding:8px 12px}
+.field{display:grid;gap:7px;margin-bottom:16px}
+.field label{font-size:19px}
+.field input{font-family:inherit;font-size:24px;padding:10px 12px;border:3px solid var(--ink);background:#fff;box-shadow:inset 3px 3px 0 rgba(0,0,0,.08);width:100%;color:var(--ink)}
+.field input:focus{outline:3px solid var(--yellow);outline-offset:2px}
+.hint{font-size:16px;opacity:.7;margin:0 0 16px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 18px 18px;border-top:4px solid var(--ink);background:#fff}
+.actions .wide{grid-column:1/-1;font-size:21px;min-height:54px}
+
+.gallery{margin-top:28px;padding:18px}
+.ghead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.ghead h2{margin:0;font-weight:400;font-size:26px}
+.gbtns{display:flex;gap:10px;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:14px}
+.card{position:relative;border:3px solid var(--ink);background:#fff;cursor:pointer;padding:6px 6px 8px;text-align:center}
+.card:hover{background:#fff4cf}
+.card canvas{width:100%;height:auto;image-rendering:pixelated;display:block;background:linear-gradient(#bfe5f8 0 92%,#cfa86f 92%)}
+.card .nm{background:#fff;border:2px solid var(--ink);font-size:16px;margin-top:6px;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .del{position:absolute;top:3px;right:3px;width:30px;height:30px;border:2px solid var(--ink);background:#fff;font-family:'Silkscreen',monospace;font-size:16px;cursor:pointer;line-height:1;padding:0}
+.card .del:hover{background:var(--red);color:#fff}
+.empty{grid-column:1/-1;padding:28px;text-align:center;border:3px dashed rgba(31,23,32,.35);font-size:19px}
+
+.modal{position:fixed;inset:0;background:rgba(18,12,22,.74);display:none;align-items:center;justify-content:center;padding:18px;z-index:50}
+.modal.on{display:flex}
+.modal .box{width:min(500px,100%);max-height:100%;overflow:auto;padding:16px}
+.modal h3{margin:0 0 10px;font-weight:400;font-size:24px}
+.modal img{width:100%;display:block;border:3px solid var(--ink)}
+.modal p{font-size:17px;margin:12px 0}
+.mbtns{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,160%);background:var(--ink);color:#fff;padding:12px 18px;font-size:19px;transition:transform .25s;z-index:60;border:3px solid #fff;box-shadow:4px 4px 0 rgba(0,0,0,.3);max-width:90vw;text-align:center}
+.toast.on{transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="logo"><span class="ko">한수</span><span class="en">RunLearn</span></div>
+      <div class="sub">한양도성을 함께 달릴 나만의 도트 러너를 만들어 보세요</div>
+    </div>
+    <div class="slogan">RUN, LEARN HANSU!</div>
+  </header>
+
+  <div class="layout">
+    <section>
+      <div class="box stage-box" id="stageBox">
+        <canvas id="stage" width="1024" height="576" aria-label="러너 미리보기 화면"></canvas>
+        <button class="btn fs-exit" id="fsExit" type="button">전체화면 닫기</button>
+        <div class="bar">
+          <button class="btn" id="runBtn" type="button">멈추기</button>
+          <div class="seg" id="themeSeg" role="group" aria-label="배경 시간대"></div>
+          <span class="spacer"></span>
+          <button class="btn" id="paradeBtn" type="button" aria-pressed="false">다 함께 달리기</button>
+          <button class="btn" id="fsBtn" type="button">전체화면</button>
+        </div>
+      </div>
+      <p class="tip">오른쪽에서 모습을 고르고, 다 만들면 <b>부스 러너로 등록하기</b>를 눌러 주세요. 등록한 러너들은 ‘다 함께 달리기’에서 같이 달려요.</p>
+    </section>
+
+    <section class="box panel">
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div id="panels"></div>
+      <div class="actions">
+        <button class="btn" id="randBtn" type="button">랜덤 러너</button>
+        <button class="btn" id="cardBtn" type="button">러너 카드 만들기</button>
+        <button class="btn primary wide" id="saveBtn" type="button">부스 러너로 등록하기</button>
+      </div>
+    </section>
+  </div>
+
+  <section class="box gallery">
+    <div class="ghead">
+      <h2>오늘의 한수 러너 <span id="cnt">0</span>명</h2>
+      <div class="gbtns">
+        <button class="btn" id="paradeBtn2" type="button">다 함께 달리기</button>
+        <button class="btn" id="clearBtn" type="button">목록 비우기</button>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+</div>
+
+<div class="modal" id="cardModal" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
+  <div class="box">
+    <h3 id="cardTitle">러너 카드</h3>
+    <img id="cardImg" alt="완성된 러너 카드">
+    <p><b>이미지 저장</b>을 누르거나, 휴대폰에서는 이미지를 <b>길게 눌러</b> 저장하세요. 인스타그램 게시물(4:5) 크기예요.</p>
+    <div class="mbtns">
+      <button class="btn" id="cardClose" type="button">닫기</button>
+      <a class="btn" id="cardDl" href="#" download="hansu-runner.png" style="text-decoration:none;display:inline-flex;align-items:center">이미지 저장</a>
+      <button class="btn primary" id="cardSave" type="button">부스 러너로 등록</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confTitle">
+  <div class="box">
+    <h3 id="confTitle">등록된 러너를 모두 지울까요?</h3>
+    <p>이 기기에 저장된 오늘의 러너 목록이 모두 사라져요. 되돌릴 수 없어요.</p>
+    <div class="mbtns">
+      <button class="btn" id="confNo" type="button">취소</button>
+      <button class="btn danger" id="confYes" type="button">모두 지우기</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(()=>{
+'use strict';
+/* ---------- 기본 설정 ---------- */
+const GW=36, GH=46, K=8, SW=128, SH=72, S=K/5;
+const OUT='#1f1720', D2R=Math.PI/180;
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function h2r(h){h=h.replace('#','');if(h.length===3)h=[...h].map(c=>c+c).join('');const n=parseInt(h,16);return[(n>>16)&255,(n>>8)&255,n&255];}
+function r2h(c){return'#'+c.map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join('');}
+function shade(h,f){const c=h2r(h);if(f<=1)return r2h([c[0]*f,c[1]*f,c[2]*f+(1-f)*28]);return r2h(c.map(v=>v+(255-v)*(f-1)));}
+function mix(a,b,t){const x=h2r(a),y=h2r(b);return r2h(x.map((v,i)=>v+(y[i]-v)*t));}
+function lum(h){const c=h2r(h).map(v=>v/255);return .2126*c[0]+.7152*c[1]+.0722*c[2];}
+function mulc(h,m){const c=h2r(h);return r2h([c[0]*m[0],c[1]*m[1],c[2]*m[2]]);}
+function hh(a,b){let h=Math.imul(a|0,374761393)^Math.imul((b|0)+1,668265263);h=Math.imul(h^(h>>>13),1274126177);return(h^(h>>>16))>>>0;}
+function mk(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
+
+/* ---------- 선택지 ---------- */
+const SKINS=['#ffe3cc','#f7cba6','#e8b087','#c98d62','#9c6643','#6a4229'];
+const HAIRC=['#1d1a1f','#3d2a20','#6e4524','#b07a3b','#e6c16e','#cfcfd4','#e0567a','#4b72d9'];
+const CLOTH=['#e5484d','#f28c28','#f5c518','#3fae5a','#20a7a0','#3a7bd5','#233a6b','#7e57c2','#f07fb0','#f4f4ef','#8a8f98','#2a2a30'];
+const SHOES=['#f4f4ef','#2a2a30','#e5484d','#f28c28','#c6f432','#3a7bd5','#20a7a0','#f07fb0','#7e57c2','#8a8f98'];
+const EYES=[['dot','기본 점 눈'],['round','또렷한 눈'],['smile','웃는 눈'],['closed','감은 눈'],['sparkle','반짝 눈']];
+const HAIRS=[['buzz','아주 짧게'],['short','숏컷'],['bob','단발'],['long','긴 머리'],['pony','포니테일']];
+const TOPS=[['singlet','민소매'],['tee','반팔'],['long','긴팔']];
+const BOTTOMS=[['shorts','반바지'],['tights','레깅스']];
+const ACCS=[['none','없음'],['band','헤어밴드'],['cap','러닝캡'],['glasses','선글라스']];
+const BIBS=[['bib','배번표 달기'],['print','옷에 바로 프린트']];
+
+let cfg={skin:SKINS[1],eye:'dot',hairStyle:'pony',hairColor:HAIRC[1],top:'tee',topColor:'#e5484d',bottom:'shorts',bottomColor:'#233a6b',shoeColor:'#f4f4ef',acc:'band',accColor:'#f5c518',bibStyle:'bib',name:'',num:'2026'};
+const KEYS=Object.keys(cfg);
+const cfgKey=c=>KEYS.map(k=>c[k]).join('|');
+
+/* ---------- 도트 그리기 도구 ---------- */
+const N4=[[1,0],[-1,0],[0,1],[0,-1]];
+const M=()=>new Set();
+function add(m,x,y){x=Math.floor(x);y=Math.floor(y);if(x>=0&&y>=0&&x<GW&&y<GH)m.add(y*GW+x);}
+function seg(px,py,ax,ay,bx,by){const vx=bx-ax,vy=by-ay,l2=vx*vx+vy*vy||1;let t=((px-ax)*vx+(py-ay)*vy)/l2;t=clamp(t,0,1);const dx=px-(ax+t*vx),dy=py-(ay+t*vy);return{d:Math.hypot(dx,dy),t};}
+function capsule(m,ax,ay,bx,by,r){const x0=Math.floor(Math.min(ax,bx)-r-1),x1=Math.ceil(Math.max(ax,bx)+r+1),y0=Math.floor(Math.min(ay,by)-r-1),y1=Math.ceil(Math.max(ay,by)+r+1);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(seg(x+.5,y+.5,ax,ay,bx,by).d<=r)add(m,x,y);}
+function stamp(g,m,fn,mode,ref){
+  for(const i of m){const x=i%GW,y=(i/GW)|0;for(const[dx,dy]of N4){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=GW||ny>=GH)continue;const j=ny*GW+nx;if(m.has(j))continue;if(mode==='outside'&&g[j]&&g[j]!==OUT)continue;
+    if(mode==='soft'&&ref&&ref[j]&&ref[j]!==OUT){g[j]=shade(ref[j],.7);continue;}g[j]=OUT;}}
+  for(const i of m)g[i]=fn(i%GW,(i/GW)|0);
+}
+const setp=(g,x,y,c)=>{if(x>=0&&y>=0&&x<GW&&y<GH)g[y*GW+x]=c;};
+const getp=(g,x,y)=>(x>=0&&y>=0&&x<GW&&y<GH)?g[y*GW+x]:null;
+
+/* ---------- 달리기 동작 (8프레임) ---------- */
+const RUN={th:[48,28,4,-22,-42,-20,22,50],sh:[10,-12,-10,-35,-90,-115,-60,-8],bob:[-1,0,1,0,-1,0,1,0]};
+function pose(f){
+  if(f<0)return{bob:0,lf:[3,0],lb:[-3,0],af:[5,15],ab:[-6,15],sway:0};
+  const g=(f+4)%8;
+  return{bob:RUN.bob[f],lf:[RUN.th[f],RUN.sh[f]],lb:[RUN.th[g],RUN.sh[g]],af:[-RUN.th[f]*1.3,70],ab:[-RUN.th[g]*1.3,70],sway:[0,1,1,0,0,1,1,0][f]};
+}
+/* 몸 비율 (로고 비율 기준): 머리 13 · 상의 10 · 하의 4 · 다리 13, 팔 10 */
+const HIP_Y=27.5, SH_Y=16.5, BIB={x:15,y:18,w:8,h:6}, TS=8, FOOT=43;
+function drawLeg(g,c,hx,hy,th,sh,dark){
+  const T=th*D2R,S=sh*D2R,L1=6.5,L2=6.5;
+  const kx=hx+L1*Math.sin(T),ky=hy+L1*Math.cos(T),ax=kx+L2*Math.sin(S),ay=ky+L2*Math.cos(S);
+  const m=M();capsule(m,hx,hy,kx,ky,1.55);capsule(m,kx,ky,ax,ay,1.45);
+  const f=dark?.74:1, skin=shade(c.skin,f*.98), pants=shade(c.bottomColor,f*.92), sock=shade('#f1f1ec',f);
+  stamp(g,m,(x,y)=>{const px=x+.5,py=y+.5,a=seg(px,py,hx,hy,kx,ky),b=seg(px,py,kx,ky,ax,ay);const al=a.d<=b.d?a.t*L1:L1+b.t*L2;
+    if(c.bottom==='tights')return al<12?pants:sock;
+    if(al<2.2)return pants;if(al>11.6)return sock;return skin;},'all');
+  const fx=Math.cos(S),fy=-Math.sin(S),nx=-fy,ny=fx;
+  const sm=M();capsule(sm,ax-.9*fx,ay-.9*fy,ax+3.2*fx,ay+3.2*fy,1.3);
+  const shoe=shade(c.shoeColor,f),sole=shade('#f4f2ea',f*(lum(c.shoeColor)>.8?.86:1)),shoeL=dark?shoe:shade(c.shoeColor,1.25);
+  stamp(g,sm,(x,y)=>{const dx=x+.5-ax,dy=y+.5-ay,p=dx*nx+dy*ny,al=dx*fx+dy*fy;if(p>.5)return sole;if(p<-.4&&al>1.6)return shoeL;return shoe;},'all');
+}
+function drawArm(g,c,sx,sy,u,bend,dark,ref){
+  const U=u*D2R,F=(u+bend)*D2R,L1=5.2,L2=4.8;
+  const ex=sx+L1*Math.sin(U),ey=sy+L1*Math.cos(U),hx=ex+L2*Math.sin(F),hy=ey+L2*Math.cos(F);
+  const m=M();capsule(m,sx,sy,ex,ey,1.4);capsule(m,ex,ey,hx,hy,1.3);capsule(m,hx,hy,hx,hy,1.5);
+  const f=dark?.74:1,skin=shade(c.skin,f),top=dark?shade(c.topColor,f*.95):shade(c.topColor,1.12);
+  stamp(g,m,(x,y)=>{const px=x+.5,py=y+.5,a=seg(px,py,sx,sy,ex,ey),b=seg(px,py,ex,ey,hx,hy);const al=a.d<=b.d?a.t*L1:L1+b.t*L2;
+    if(c.top==='tee'&&al<2.6)return top;if(c.top==='long'&&al<8.8)return top;return skin;},ref?'soft':'all',ref);
+}
+function rows(list){const m=[];for(const[y,a,b]of list)for(let x=a;x<=b;x++)m.push([x,y]);return m;}
+function headRows(){const r=[[2,15,21],[3,13,23],[4,12,24]];for(let y=5;y<=11;y++)r.push([y,12,24]);r.push([12,13,24],[13,15,23]);return rows(r);}
+function hairRows(s){
+  if(s==='buzz')return rows([[1,15,21],[2,13,23],[3,12,23],[4,12,14],[5,12,13],[6,12,13]]);
+  const r=[[1,14,22],[2,13,23],[3,12,24],[4,12,24],[5,12,16]];
+  if(s==='short'){for(let y=6;y<=10;y++)r.push([y,12,15]);r.push([11,13,14]);}
+  else if(s==='bob'){for(let y=5;y<=12;y++)r.push([y,11,17]);r.push([13,11,16],[14,12,15]);}
+  else if(s==='long'){for(let y=5;y<=13;y++)r.push([y,11,15]);}
+  else if(s==='pony'){for(let y=5;y<=9;y++)r.push([y,12,15]);}
+  return rows(r);
+}
+
+function buildGrids(c,frame){
+  const P=pose(frame),b=P.bob+1;
+  const gB=new Array(GW*GH).fill(null),gF=new Array(GW*GH).fill(null);
+  const skin=c.skin,skinS=shade(skin,.86),skinD=shade(skin,.72),hair=c.hairColor;
+  // 뒤쪽 머리카락
+  if(c.hairStyle==='long'){const m=M();for(let y=12;y<=24;y++){let a=10,e=13;if(y>=22)a=11;if(y===24)e=12;const dx=y>=18?-P.sway:0;for(let x=a;x<=e;x++)add(m,x+dx,y+b);}stamp(gB,m,x=>x<=10?shade(hair,.78):shade(hair,.9),'all');}
+  if(c.hairStyle==='pony'){const m=M();capsule(m,11.5,5.5+b,8.6,7.6+b,1.55);capsule(m,8.6,7.6+b,6.6-P.sway*.5,12.5-P.bob*.8+b,1.25);stamp(gB,m,x=>x<=8?shade(hair,.8):shade(hair,.92),'all');}
+  // 뒤쪽 다리·팔
+  drawLeg(gB,c,18,HIP_Y+b,P.lb[0],P.lb[1],true);
+  drawArm(gB,c,17.5,SH_Y+b,P.ab[0],P.ab[1],true);
+  // 몸통(상의 y15~24) + 하의(y25~28)
+  {const m=M();
+    if(c.top==='singlet'){for(let x=17;x<=20;x++)add(m,x,15+b);}else{for(let x=16;x<=21;x++)add(m,x,15+b);}
+    for(let y=16;y<=27;y++)for(let x=14;x<=23;x++)add(m,x,y+b);
+    for(let x=14;x<=22;x++)add(m,x,28+b);
+    const tc=c.topColor,bc=c.bottomColor,stripe=lum(bc)>.72?shade(bc,.72):'#f4f2ea';
+    stamp(gB,m,(x,y)=>{const ry=y-b;
+      if(ry<=24){if(ry===24)return shade(tc,.84);if(x<=15)return shade(tc,.82);if(x>=22&&ry<=18)return shade(tc,1.18);if(ry===15)return shade(tc,.9);return tc;}
+      if(c.bottom==='shorts'&&x===19)return stripe;
+      if(ry===28)return shade(bc,.82);if(x<=15)return shade(bc,.8);return bc;},'all');
+  }
+  // 목
+  {const m=M();for(let y=13;y<=14;y++)for(let x=17;x<=19;x++)add(m,x,y+b);stamp(gB,m,()=>skinS,'outside');}
+  // 얼굴
+  {const m=M();for(const[x,y]of headRows())add(m,x,y+b);stamp(gB,m,(x,y)=>{const ry=y-b;if(ry===13||(ry===12&&x<=14))return skinS;return skin;},'outside');}
+  // 귀
+  setp(gB,16,9+b,skinS);setp(gB,17,9+b,skinS);setp(gB,16,10+b,skinS);setp(gB,17,10+b,skinD);setp(gB,16,11+b,skinS);
+  // 앞머리·옆머리
+  {const m=M();for(const[x,y]of hairRows(c.hairStyle))add(m,x,y+b);
+    stamp(gB,m,(x,y)=>{const ry=y-b;if(ry===2&&x>=17&&x<=19)return shade(hair,lum(hair)<.15?1.22:1.16);if(!m.has((y+1)*GW+x))return shade(hair,.74);if(x<=12)return shade(hair,.86);return hair;},'outside');}
+  if(c.hairStyle==='pony'){setp(gB,11,5+b,c.accColor);setp(gB,11,6+b,shade(c.accColor,.85));}
+  // 눈·눈썹·입·볼
+  if(c.acc!=='glasses'){const E='#1a1420',P=(x,y,col)=>setp(gB,x,y+b,col||E);
+    switch(c.eye){
+      case 'round':P(21,8);P(22,8);P(21,9);P(22,9);break;
+      case 'smile':P(21,9);P(22,8);P(23,9);break;
+      case 'closed':P(21,9);P(22,9);P(23,9);break;
+      case 'sparkle':for(let y=8;y<=10;y++){P(21,y);P(22,y);}P(22,8,'#ffffff');P(21,10,'#3a2f45');P(23,8);break;
+      default:P(22,8);P(22,9);
+    }}
+  const blush=mix(skin,'#ff7b8f',.5);setp(gB,20,11+b,blush);setp(gB,21,11+b,blush);
+  setp(gB,24,12+b,mix(skin,'#b8455a',.55));
+  // 소품
+  if(c.acc==='band'){const ac=c.accColor;for(let x=12;x<=24;x++){const v=getp(gB,x,4+b);if(v&&v!==OUT)setp(gB,x,4+b,ac);}
+    const m=M();add(m,11,4+b);add(m,10,4+b);add(m,10,5+b);add(m,9,5+b+P.sway);stamp(gB,m,()=>shade(ac,.85),'outside');}
+  if(c.acc==='cap'){const ac=c.accColor,m=M();for(const[x,y]of rows([[0,15,21],[1,13,22],[2,12,23],[3,12,23],[4,20,27]]))add(m,x,y+b);
+    stamp(gB,m,(x,y)=>{const ry=y-b;if(ry===4)return shade(ac,.8);if(ry<=1&&x>=17&&x<=20)return shade(ac,1.22);if(x<=13)return shade(ac,.85);return ac;},'all');
+    setp(gB,19,2+b,lum(ac)>.7?'#1f1720':'#ffffff');}
+  if(c.acc==='glasses'){for(let x=17;x<=20;x++)setp(gB,x,8+b,'#2a2a33');for(let x=20;x<=24;x++){setp(gB,x,8+b,'#18202e');setp(gB,x,9+b,'#18202e');}setp(gB,23,8+b,'#8fe3ff');}
+  // 앞쪽 다리
+  drawLeg(gB,c,19,HIP_Y+b,P.lf[0],P.lf[1],false);
+  // 배번표
+  if(c.bibStyle==='bib'){const x0=BIB.x,x1=BIB.x+BIB.w-1,y0=BIB.y,y1=BIB.y+BIB.h-1;
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)setp(gB,x,y+b,y===y1?'#d8d4c8':'#f8f6ef');
+    for(const[x,y]of[[x0,y0],[x1,y0],[x0,y1],[x1,y1]])setp(gB,x,y+b,'#9aa2ad');}
+  // 앞쪽 팔 (배번 위로 지나감)
+  drawArm(gF,c,18.5,SH_Y+b,P.af[0],P.af[1],false,gB);
+  return{gB,gF,b};
+}
+
+/* ---------- 배번 글자 (세밀 도트) ---------- */
+const textCache=new Map();
+const TF='"Black Han Sans","Do Hyeon",sans-serif';
+function bibText(c,ts){ts=ts||TS;const q=ts/TS;
+  const name=(c.name||'').trim(),num=(c.num||'').trim();if(!name&&!num)return null;
+  const col=c.bibStyle==='bib'?'#1c2240':(lum(c.topColor)>.55?'#1c1c24':'#ffffff');
+  const key=name+'|'+num+'|'+col+'|'+ts;if(textCache.has(key))return textCache.get(key);
+  const W=BIB.w*ts,H=BIB.h*ts,cv=mk(W,H),x=cv.getContext('2d'),mw=W-6*q;
+  x.fillStyle='#fff';x.textAlign='center';x.textBaseline='middle';
+  const fit=(t,max)=>{let s=Math.round(max*q);x.font=`${s}px ${TF}`;while(s>6&&x.measureText(t).width>mw){s--;x.font=`${s}px ${TF}`;}};
+  if(name&&num){fit(name,15);x.fillText(name,W/2,12*q);fit(num,25);x.fillText(num,W/2,33*q);}
+  else{const t=name||num;fit(t,name?24:32);x.fillText(t,W/2,H/2+1);}
+  const d=x.getImageData(0,0,W,H),p=d.data,[r,g,bb]=h2r(col);
+  for(let i=0;i<p.length;i+=4){if(p[i+3]>=110){p[i]=r;p[i+1]=g;p[i+2]=bb;p[i+3]=255;}else p[i+3]=0;}
+  x.putImageData(d,0,0);textCache.set(key,cv);return cv;
+}
+
+const spriteCache=new Map();
+function blit(x,g,k){for(let i=0;i<g.length;i++){const c=g[i];if(!c)continue;x.fillStyle=c;x.fillRect((i%GW)*k,((i/GW)|0)*k,k,k);}}
+function renderSprite(c,frame,k){
+  const key=cfgKey(c)+'#'+frame+'#'+k;let cv=spriteCache.get(key);if(cv)return cv;
+  const{gB,gF,b}=buildGrids(c,frame);cv=mk(GW*k,GH*k);const x=cv.getContext('2d');
+  blit(x,gB,k);const ts=k>=16&&k%2===0?k/2:TS;const t=bibText(c,ts);if(t){x.imageSmoothingEnabled=k%ts!==0;x.drawImage(t,BIB.x*k,(BIB.y+b)*k,BIB.w*k,BIB.h*k);}blit(x,gF,k);
+  spriteCache.set(key,cv);if(spriteCache.size>1200)spriteCache.delete(spriteCache.keys().next().value);
+  return cv;
+}
+
+/* ---------- 배경 (한양도성) ---------- */
+const THEMES={
+  day:{label:'낮',sky:['#69bdf0','#80c8f2','#9ad4f5','#b5e0f7','#d2edfa'],far:'#93bdcf',farTop:'#b2d3e0',hill:'#5aa35f',hillTop:'#72b874',tree:'#3f7f4a',treeD:'#326a3c',mul:[1,1,1],warm:0,sun:{x:104,y:11,r:5,c:'#fff1a6'},cloud:'#ffffff',cloudS:'#d7ecfb',stars:false,night:false},
+  sunset:{label:'노을',sky:['#3b3775','#61448a','#a5527f','#dc7468','#f4a05e','#f9cf88'],far:'#7b5a86',farTop:'#9b7195',hill:'#594a69',hillTop:'#6b5976',tree:'#433955',treeD:'#382f48',mul:[1,.86,.8],warm:.12,sun:{x:96,y:40,r:7,c:'#ffd27a'},cloud:'#f8b49a',cloudS:'#cf8a90',stars:false,night:false},
+  night:{label:'밤',sky:['#080c28','#0e153d','#141e4e','#1c295f','#253670'],far:'#1d2650',farTop:'#2a3668',hill:'#17203e',hillTop:'#1f2a4c',tree:'#111931',treeD:'#0d1428',mul:[.4,.46,.68],warm:.6,sun:{x:102,y:12,r:4,c:'#f5f0cf'},cloud:null,stars:true,night:true}
+};
+const tileCache={};
+function getTiles(name){
+  if(tileCache[name])return tileCache[name];
+  const th=THEMES[name];
+  const make=(wu,fn)=>{const c=mk(wu*K,SH*K),x=c.getContext('2d');fn((X,Y,col)=>{x.fillStyle=col;x.fillRect(X*K,Y*K,K,K);});return{c,w:wu};};
+  const TAU=Math.PI*2;
+  // 먼 산 + 남산타워
+  const mtn=make(256,px=>{
+    const top=x=>Math.round(30+6*Math.sin(TAU*x*2/256)+4*Math.sin(TAU*x*5/256+1)+2*Math.sin(TAU*x*11/256+2));
+    for(let x=0;x<256;x++){const t=top(x);for(let y=t;y<SH;y++)px(x,y,y===t?th.farTop:th.far);}
+    const tx=200,t0=top(tx),tw=th.night?'#ffe3a0':mix('#efe9dc',th.far,.25),tl=th.night?'#ffb84d':mix('#c9c2b3',th.far,.25);
+    [[-1,-1],[0,-1],[1,-1],[-1,-2],[1,-2]].forEach(([dx,dy])=>px(tx+dx,t0+dy,tl));px(tx,t0-2,tw);
+    for(let y=t0-11;y<=t0-3;y++)px(tx,y,tw);
+    [[-1,-9],[1,-9],[-2,-10],[2,-10],[-1,-11],[1,-11]].forEach(([dx,dy])=>px(tx+dx,t0+dy,tl));px(tx-1,t0-10,tw);px(tx+1,t0-10,tw);
+    for(let y=t0-15;y<=t0-12;y++)px(tx,y,tl);px(tx,t0-16,th.night?'#ff5a5a':'#d9473f');
+  });
+  // 가까운 언덕 + 소나무
+  const hill=make(192,px=>{
+    const top=x=>Math.round(48+2*Math.sin(TAU*x*2/192)+1.4*Math.sin(TAU*x*5/192+1));
+    for(let x=0;x<192;x++){const t=top(x);for(let y=t;y<SH;y++)px(x,y,y===t?th.hillTop:th.hill);}
+    for(let i=0;i<32;i++){const tx=i*6+(hh(i,3)%3),s=4+(hh(i,9)%3),base=top(tx);
+      for(let r=0;r<=s;r++){const y=base-s-1+r,half=Math.min(3,Math.floor((r+1)/2));for(let dx=-half;dx<=half;dx++)px((tx+dx+192)%192,y,dx>0?th.treeD:th.tree);}}
+  });
+  // 성곽 + 문루
+  const ST={l:'#ddd5c3',m:'#cdc4b0',d:'#b8ae98',mortar:'#9b917d',par:'#d9d2c2',parD:'#c4bcaa',cap:'#5d6168',hole:'#2b2a30'};
+  const wc=(c,y)=>{let v=mulc(c,th.mul);if(th.warm){const a=th.night?th.warm*clamp((y-36)/26,0,1):th.warm;v=mix(v,'#ffc46b',a);}return v;};
+  const wall=make(240,px=>{
+    const topAt=x=>{const s=Math.floor(x/8)*8+4;return 41+Math.round(2.4*Math.sin(TAU*s/240)+1.3*Math.sin(TAU*s*3/240+.7));};
+    const stone=(x,y)=>{const row=Math.floor(y/3);if(y%3===2)return ST.mortar;const off=(row%2)*3;if((x+off)%6===5)return ST.mortar;const t=hh(Math.floor((x+off)/6),row)%4;let c=t===0?ST.l:t===3?ST.d:ST.m;if(y>=58)c=shade(c,.9);return c;};
+    for(let x=0;x<240;x++){
+      if(x>=100&&x<=140)continue;
+      const T=topAt(x),loc=x%8;
+      if(loc<6)px(x,T-6,wc(ST.cap,T-6));
+      for(let y=T-5;y<T;y++){if(loc>=6&&y<T-2)continue;let c=((y-T)%2===0&&loc%3===0)?ST.parD:ST.par;if((loc===2||loc===3)&&y===T-3)c=ST.hole;px(x,y,wc(c,y));}
+      px(x,T,wc(ST.d,T));
+      for(let y=T+1;y<63;y++)px(x,y,wc(stone(x,y),y));
+    }
+    const cx=120,G={wood:'#8b4a2f',pil:'#b9442f',inner:th.night?'#f0a650':'#3b2722',band:'#2f8f7a',dot:'#e9c25a',roof:'#4a5059',roofD:'#373c44',ridge:'#2c3036',arch:'#2a221f'};
+    for(let x=100;x<=140;x++)for(let y=30;y<63;y++){const dx=Math.abs(x-cx);
+      const open=(y>=46&&dx<=6)||(y===45&&dx<=5)||(y===44&&dx<=4)||(y===43&&dx<=2);
+      const ring=!open&&((y>=45&&dx===7)||(y===44&&dx>=5&&dx<=6)||(y===43&&dx>=3&&dx<=4)||(y===42&&dx<=2));
+      px(x,y,open?(th.night?'#5a3a24':wc(G.arch,y)):wc(ring?ST.l:(y===30?ST.d:stone(x,y)),y));}
+    for(let x=101;x<=139;x++){px(x,29,wc(G.wood,29));if(x%3===0){px(x,28,wc(G.wood,28));px(x,27,wc(G.wood,27));}px(x,26,wc(shade(G.wood,1.15),26));}
+    const pillars=[104,110,116,124,130,136];
+    for(let x=103;x<=137;x++)for(let y=20;y<=25;y++){const isP=pillars.includes(x);px(x,y,isP?wc(G.pil,y):(th.night?G.inner:wc(G.inner,y)));}
+    for(let x=102;x<=138;x++){px(x,18,wc(x%4===0?G.dot:G.band,18));px(x,19,wc(G.band,19));}
+    for(let r=0;r<8;r++){const y=10+r,hw=Math.round(11+r*1.7);for(let x=cx-hw;x<=cx+hw;x++)px(x,y,wc(r===7||x%3===0?G.roofD:G.roof,y));}
+    const h7=Math.round(11+7*1.7);[-1,1].forEach(s=>{px(cx+s*(h7+1),17,wc(G.roofD,17));px(cx+s*(h7+1),16,wc(G.roof,16));px(cx+s*(h7+2),16,wc(G.roof,16));px(cx+s*(h7+2),15,wc(G.roofD,15));});
+    for(let x=cx-14;x<=cx+14;x++)px(x,9,wc(G.ridge,9));px(cx-15,8,wc(G.ridge,8));px(cx+15,8,wc(G.ridge,8));
+  });
+  // 길
+  const GR={grass:'#62b04f',grassD:'#4e9441',dirt:'#cfa86f',dirtL:'#ddba85',dirtD:'#b78f59',peb:'#9b7a4c'};
+  const gc=c=>mulc(c,th.night?[.55,.6,.8]:th.mul);
+  const ground=make(64,px=>{for(let x=0;x<64;x++){if(hh(x,5)%5===0)px(x,62,gc(GR.grass));px(x,63,gc(GR.grass));px(x,64,gc(hh(x,1)%3===0?GR.grass:GR.grassD));
+    for(let y=65;y<SH;y++){const h=hh(x,y)%23;let c=GR.dirt;if(h===0)c=GR.peb;else if(h<3)c=GR.dirtD;else if(h<5)c=GR.dirtL;px(x,y,gc(c));}}});
+  return(tileCache[name]={mtn,hill,wall,ground});
+}
+function disc(x,cx,cy,r,col,k){x.fillStyle=col;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(dx*dx+dy*dy<=r*r+r*.6)x.fillRect((cx+dx)*k,(cy+dy)*k,k,k);}
+function cloud(x,cx,cy,w,th,k){x.fillStyle=th.cloud;x.fillRect((cx+3)*k,cy*k,(w-6)*k,k);x.fillRect((cx+1)*k,(cy+1)*k,(w-2)*k,k);x.fillRect(cx*k,(cy+2)*k,w*k,k);x.fillStyle=th.cloudS;x.fillRect((cx+1)*k,(cy+3)*k,(w-2)*k,k);}
+function layer(x,L,off,k,viewW,yOff){const o=((Math.floor(off)%L.w)+L.w)%L.w;for(let px=-o;px<viewW;px+=L.w)x.drawImage(L.c,px*k,yOff*k,L.w*k,SH*k);}
+function drawScene(x,k,viewW,yOff,offs,themeName,t){
+  const th=THEMES[themeName],T=getTiles(themeName);x.imageSmoothingEnabled=false;
+  x.fillStyle=th.sky[0];x.fillRect(0,0,viewW*k,x.canvas.height);const n=th.sky.length,bh=63/n;
+  for(let i=0;i<n;i++){const y0=Math.round(i*bh),y1=Math.round((i+1)*bh);x.fillStyle=th.sky[i];x.fillRect(0,(y0+yOff)*k,viewW*k,(y1-y0+1)*k);
+    if(i>0)for(let px=0;px<viewW;px+=2)x.fillRect(px*k,(y0-1+yOff)*k,k,k);}
+  if(th.stars)for(let i=0;i<46;i++){const sx=hh(i,1)%128,sy=hh(i,2)%34;if(sx>=viewW)continue;const tw=(hh(i,5)+Math.floor(t*3))%9;
+    x.fillStyle=tw===0?'#5d6aa8':(i%5===0?'#ffe9a8':'#ffffff');x.fillRect(sx*k,(sy+yOff)*k,k,k);
+    if(i%11===0&&tw!==0){x.fillStyle='rgba(255,255,255,.45)';x.fillRect((sx-1)*k,(sy+yOff)*k,k,k);x.fillRect((sx+1)*k,(sy+yOff)*k,k,k);x.fillRect(sx*k,(sy-1+yOff)*k,k,k);x.fillRect(sx*k,(sy+1+yOff)*k,k,k);}}
+  const s=th.sun,sx=offs.sunX!=null?offs.sunX:s.x;
+  if(!th.night&&themeName==='day')disc(x,sx,s.y+yOff,s.r+1,'rgba(255,255,255,.28)',k);
+  disc(x,sx,s.y+yOff,s.r,s.c,k);
+  if(th.night){x.fillStyle='#d8d2ad';[[-1,-1],[1,1],[2,-2]].forEach(([dx,dy])=>x.fillRect((sx+dx)*k,(s.y+dy+yOff)*k,k,k));}
+  if(th.cloud){const cl=[[10,8,12],[52,4,16],[90,15,10],[140,9,14]];for(const[c0,cy,w]of cl){const span=180;const cx=(((c0-(offs.cloud||0))%span)+span)%span-20;if(cx<viewW)cloud(x,Math.floor(cx),cy+yOff,w,th,k);}}
+  layer(x,T.mtn,offs.mtn,k,viewW,yOff);layer(x,T.hill,offs.hill,k,viewW,yOff);layer(x,T.wall,offs.wall,k,viewW,yOff);layer(x,T.ground,offs.ground,k,viewW,yOff);
+}
+function shadow(x,cx,y,k,w){cx=Math.round(cx);x.fillStyle='rgba(25,15,30,.22)';x.fillRect((cx-w)*k,y*k,2*w*k,k);x.fillRect((cx-w+2)*k,(y+1)*k,(2*w-4)*k,k);}
+function bubble(x,t,cx,by,fs){
+  x.font=`${fs}px "Do Hyeon",sans-serif`;const w=Math.ceil(x.measureText(t).width+fs*.9),h=Math.round(fs*1.45),l=Math.round(cx-w/2),top=Math.round(by-h);
+  x.fillStyle=OUT;x.fillRect(l-3,top-3,w+6,h+6);x.fillRect(cx-4,by+3,8,3);x.fillRect(cx-2,by+6,4,3);
+  x.fillStyle='#fff';x.fillRect(l,top,w,h);
+  x.fillStyle=OUT;x.textAlign='center';x.textBaseline='middle';x.fillText(t,cx,top+h/2+1);x.textAlign='left';x.textBaseline='alphabetic';
+}
+
+/* ---------- 상태 ---------- */
+let theme='day',running=true,mode='edit';
+let clock=0,animT=0,scroll=0,paradeT=0,last=performance.now(),lastThumb=null;
+const STORE='hansu-runners-v1';
+let saved=[];
+try{saved=JSON.parse(localStorage.getItem(STORE)||'[]');if(!Array.isArray(saved))saved=[];}catch(e){saved=[];}
+saved=saved.filter(r=>r&&r.cfg).map(r=>({...r,cfg:{...cfg,...r.cfg}}));
+function persist(){try{localStorage.setItem(STORE,JSON.stringify(saved));}catch(e){}}
+
+/* ---------- 무대 그리기 ---------- */
+const stage=$('#stage'),sctx=stage.getContext('2d');
+function drawStage(){
+  const x=sctx;x.imageSmoothingEnabled=false;
+  drawScene(x,K,SW,0,{mtn:scroll*.08,hill:scroll*.2,wall:scroll*.45,ground:scroll,cloud:scroll*.04+clock*.8},theme,clock);
+  if(mode==='parade'&&saved.length)drawParade(x);else drawHero(x);
+  hud(x);
+}
+function drawHero(x){
+  const f=running?Math.floor(animT*11)%8:-1,ox=45,oy=66-FOOT+1;
+  shadow(x,ox+19,65,K,8);x.drawImage(renderSprite(cfg,f,K),ox*K,oy*K);
+  const nm=cfg.name.trim();if(nm)bubble(x,nm,Math.round((ox+19)*K),(oy+1)*K-14,30);
+}
+function drawParade(x){
+  const span=SW+36,k=4;
+  const items=saved.slice(0,24).map((r,i)=>{const row=i%2,sp=3+hh(i,7)%5,ph=hh(i,11)%span;return{r,i,row,ux:((ph+paradeT*sp)%span)-30};}).sort((a,b)=>a.row-b.row);
+  for(const it of items){
+    const f=running?(Math.floor(animT*11)+it.i*3)%8:-1,gy=it.row?70:64,ox=Math.round(it.ux*K),oy=(gy-(FOOT-1)/2)*K,cx=Math.round(ox+19*k);
+    x.fillStyle='rgba(25,15,30,.22)';x.fillRect(cx-36,gy*K-4,72,6);
+    x.drawImage(renderSprite(it.r.cfg,f,k),ox,oy);
+    const nm=it.r.cfg.name.trim()||(it.r.cfg.num?'No.'+it.r.cfg.num:'');if(nm)bubble(x,nm,cx,oy-2,20);
+  }
+}
+function hud(x){
+  x.textBaseline='top';x.font='700 22px Silkscreen,monospace';
+  x.fillStyle='rgba(20,14,24,.5)';x.fillText('HANSU RUNLEARN',22,22);x.fillStyle='#fff';x.fillText('HANSU RUNLEARN',19,19);
+  if(mode==='parade'&&saved.length){const t=`오늘의 한수 러너 ${saved.length}명`+(saved.length>24?' (최근 24명)':'');x.font='34px "Do Hyeon",sans-serif';
+    const w=x.measureText(t).width+40,l=Math.round((1024-w)/2);x.fillStyle=OUT;x.fillRect(l,16,w,54);x.fillStyle='#ffe066';x.textAlign='center';x.fillText(t,512,26);x.textAlign='left';}
+  x.textBaseline='alphabetic';
+}
+
+/* ---------- 컨트롤 ---------- */
+const TABS=[
+  {name:'얼굴·머리',groups:[{key:'skin',label:'피부색',type:'color',list:SKINS},{key:'eye',label:'눈 모양',type:'opt',list:EYES},{key:'hairStyle',label:'머리 길이',type:'opt',list:HAIRS},{key:'hairColor',label:'머리색',type:'color',list:HAIRC}]},
+  {name:'옷',groups:[{key:'top',label:'상의 종류',type:'opt',list:TOPS},{key:'topColor',label:'상의 색',type:'color',list:CLOTH},{key:'bottom',label:'하의 종류',type:'opt',list:BOTTOMS},{key:'bottomColor',label:'하의 색',type:'color',list:CLOTH}]},
+  {name:'신발·소품',groups:[{key:'shoeColor',label:'운동화 색',type:'color',list:SHOES},{key:'acc',label:'소품',type:'opt',list:ACCS},{key:'accColor',label:'포인트 색 (헤어밴드·모자·머리끈)',type:'color',list:CLOTH,id:'accGroup'}]},
+  {name:'이름·번호',special:true,groups:[{key:'bibStyle',label:'몸통에 표시하는 방법',type:'opt',list:BIBS}]}
+];
+const COLOR_NAMES={'#ffe3cc':'아주 밝은 피부','#f7cba6':'밝은 피부','#e8b087':'중간 피부','#c98d62':'구릿빛 피부','#9c6643':'어두운 피부','#6a4229':'아주 어두운 피부'};
+const controls=[];
+function buildControls(){
+  const tabs=$('#tabs'),panels=$('#panels');
+  TABS.forEach((tab,ti)=>{
+    const b=document.createElement('button');b.className='tab';b.type='button';b.role='tab';b.id='tab'+ti;b.textContent=tab.name;b.setAttribute('aria-controls','panel'+ti);b.setAttribute('aria-selected',ti===0?'true':'false');
+    b.onclick=()=>selectTab(ti);tabs.appendChild(b);
+    const p=document.createElement('div');p.className='tabpanel'+(ti===0?' on':'');p.id='panel'+ti;p.role='tabpanel';p.setAttribute('aria-labelledby','tab'+ti);panels.appendChild(p);
+    if(tab.special){
+      p.insertAdjacentHTML('beforeend',`<div class="field"><label for="nameIn">이름 (최대 6자)</label><input id="nameIn" maxlength="6" autocomplete="off" placeholder="예: 고은"></div>
+      <div class="field"><label for="numIn">번호 (숫자 최대 4자리)</label><input id="numIn" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="예: 1112"></div>
+      <p class="hint">이름은 머리 위 이름표와 몸통에, 번호는 몸통에 들어가요. 둘 다 넣으면 이름은 작게, 번호는 크게 표시돼요.</p>`);
+    }
+    tab.groups.forEach(gdef=>{
+      const g=document.createElement('div');g.className='group';if(gdef.id)g.id=gdef.id;
+      g.innerHTML=`<h3>${gdef.label}</h3>`;const wrap=document.createElement('div');wrap.className=gdef.type==='color'?'sws':'opts';wrap.setAttribute('role','group');wrap.setAttribute('aria-label',gdef.label);g.appendChild(wrap);
+      if(gdef.type==='color'){
+        gdef.list.forEach(col=>{const s=document.createElement('button');s.type='button';s.className='sw';s.style.background=col;s.dataset.v=col;s.setAttribute('aria-label',COLOR_NAMES[col]||('색상 '+col));s.onclick=()=>setVal(gdef.key,col);wrap.appendChild(s);});
+        const cu=document.createElement('label');cu.className='sw custom';cu.title='직접 고르기';cu.innerHTML=`<input type="color" aria-label="${gdef.label} 직접 고르기">`;
+        cu.querySelector('input').addEventListener('input',e=>setVal(gdef.key,e.target.value));wrap.appendChild(cu);
+        controls.push({def:gdef,wrap,custom:cu});
+      }else{
+        gdef.list.forEach(([v,l])=>{const o=document.createElement('button');o.type='button';o.className='btn';o.textContent=l;o.dataset.v=v;o.onclick=()=>setVal(gdef.key,v);wrap.appendChild(o);});
+        controls.push({def:gdef,wrap});
+      }
+      p.appendChild(g);
+    });
+  });
+  const ni=$('#nameIn'),nu=$('#numIn');
+  ni.addEventListener('input',()=>{cfg.name=ni.value.slice(0,6);changed(false);});
+  nu.addEventListener('input',()=>{const v=nu.value.replace(/\D/g,'').slice(0,4);if(v!==nu.value)nu.value=v;cfg.num=v;changed(false);});
+}
+function selectTab(i){document.querySelectorAll('.tab').forEach((t,j)=>t.setAttribute('aria-selected',j===i?'true':'false'));document.querySelectorAll('.tabpanel').forEach((p,j)=>p.classList.toggle('on',j===i));}
+function setVal(k,v){cfg[k]=v;changed(true);}
+function changed(){if(mode==='parade')setMode('edit');sync();}
+function sync(){
+  for(const c of controls){const v=cfg[c.def.key];let hit=false;
+    c.wrap.querySelectorAll('[data-v]').forEach(b=>{const on=b.dataset.v===v;if(on)hit=true;b.setAttribute('aria-pressed',on?'true':'false');});
+    if(c.custom){c.custom.setAttribute('aria-pressed',(!hit)?'true':'false');if(!hit)c.custom.style.boxShadow=`inset 0 0 0 9px ${v}`;else c.custom.style.boxShadow='';try{c.custom.querySelector('input').value=v;}catch(e){}}}
+  const ag=$('#accGroup');if(ag)ag.style.display=(cfg.acc==='band'||cfg.acc==='cap'||cfg.hairStyle==='pony')?'':'none';
+  const ni=$('#nameIn'),nu=$('#numIn');if(document.activeElement!==ni)ni.value=cfg.name;if(document.activeElement!==nu)nu.value=cfg.num;
+}
+
+/* ---------- 버튼 ---------- */
+const themeSeg=$('#themeSeg');
+Object.entries(THEMES).forEach(([k,t])=>{const b=document.createElement('button');b.type='button';b.className='btn';b.textContent=t.label;b.dataset.v=k;b.onclick=()=>{theme=k;syncTheme();};themeSeg.appendChild(b);});
+function syncTheme(){themeSeg.querySelectorAll('.btn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===theme?'true':'false'));}
+$('#runBtn').onclick=()=>{running=!running;$('#runBtn').textContent=running?'멈추기':'달리기';};
+function setMode(m){mode=m;const on=m==='parade';['#paradeBtn','#paradeBtn2'].forEach(s=>{const b=$(s);b.setAttribute('aria-pressed',on?'true':'false');b.textContent=on?'내 러너로 돌아가기':'다 함께 달리기';});}
+function toggleParade(){if(mode==='parade'){setMode('edit');return;}if(!saved.length){toast('먼저 ‘부스 러너로 등록하기’로 러너를 등록해 주세요');return;}setMode('parade');if(innerWidth<920)$('#stageBox').scrollIntoView({behavior:'smooth',block:'center'});}
+$('#paradeBtn').onclick=toggleParade;$('#paradeBtn2').onclick=toggleParade;
+$('#fsBtn').onclick=()=>{const el=$('#stageBox');const req=el.requestFullscreen||el.webkitRequestFullscreen;if(!req){toast('이 화면에서는 전체화면을 쓸 수 없어요');return;}try{const p=req.call(el);if(p&&p.catch)p.catch(()=>toast('이 화면에서는 전체화면을 쓸 수 없어요'));}catch(e){toast('이 화면에서는 전체화면을 쓸 수 없어요');}};
+$('#fsExit').onclick=()=>{const ex=document.exitFullscreen||document.webkitExitFullscreen;if(ex)try{ex.call(document);}catch(e){}};
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+$('#randBtn').onclick=()=>{Object.assign(cfg,{skin:pick(SKINS),eye:pick(EYES)[0],hairStyle:pick(HAIRS)[0],hairColor:pick(HAIRC),top:pick(TOPS)[0],topColor:pick(CLOTH),bottom:pick(BOTTOMS)[0],bottomColor:pick(CLOTH),shoeColor:pick(SHOES),acc:pick(ACCS)[0],accColor:pick(CLOTH)});changed();};
+function register(){
+  saved.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),cfg:{...cfg},at:Date.now()});
+  if(saved.length>80)saved.length=80;persist();renderGallery();
+  const nm=cfg.name.trim();toast(`${nm?nm+' 러너, ':''}등록 완료! 오늘의 ${saved.length}번째 한수 러너예요`);
+}
+$('#saveBtn').onclick=register;
+$('#cardSave').onclick=()=>{register();closeModal('#cardModal');};
+
+/* ---------- 러너 카드 (1080×1350) ---------- */
+function makeCard(){
+  const W=1080,H=1350,k=20,c=mk(W,H),x=c.getContext('2d');
+  const yo=-5.5;drawScene(x,k,54,yo,{mtn:170,hill:20,wall:0,ground:0,cloud:40,sunX:46},theme,clock);
+  shadow(x,27,65+yo,k,8);x.imageSmoothingEnabled=false;x.drawImage(renderSprite(cfg,4,k),(27-19)*k,(66-FOOT+1+yo)*k);
+  const gr=x.createLinearGradient(0,0,0,340);gr.addColorStop(0,'rgba(20,14,30,.6)');gr.addColorStop(1,'rgba(20,14,30,0)');x.fillStyle=gr;x.fillRect(0,0,W,340);
+  x.lineJoin='round';
+  x.font='700 30px Silkscreen,monospace';x.fillStyle='#ffe066';x.fillText('HANSU RUNLEARN · RUNNER CARD',60,86);
+  const nm=cfg.name.trim()||'RUNNER';let fs=124;x.font=`${fs}px ${TF}`;while(x.measureText(nm).width>W-120&&fs>50){fs-=4;x.font=`${fs}px ${TF}`;}
+  x.lineWidth=14;x.strokeStyle=OUT;x.strokeText(nm,60,212);x.fillStyle='#fff';x.fillText(nm,60,212);
+  if(cfg.num){x.font='700 58px Silkscreen,monospace';x.lineWidth=10;x.strokeText('NO.'+cfg.num,60,288);x.fillStyle='#ffe066';x.fillText('NO.'+cfg.num,60,288);}
+  x.fillStyle='rgba(22,16,30,.88)';x.fillRect(0,H-96,W,96);x.fillStyle='#ffe066';x.fillRect(0,H-96,W,6);
+  x.fillStyle='#fff';x.font='700 32px Silkscreen,monospace';x.fillText('RUN, LEARN HANSU!',48,H-34);
+  const d=new Date(),ds=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  x.font='34px "Do Hyeon",sans-serif';x.textAlign='right';x.fillText(`한양도성 · ${ds}`,W-48,H-34);x.textAlign='left';
+  return c.toDataURL('image/png');
+}
+let lastFocus=null;
+function openModal(s){lastFocus=document.activeElement;$(s).classList.add('on');const b=$(s).querySelector('.btn');if(b)b.focus();}
+function closeModal(s){$(s).classList.remove('on');if(lastFocus&&lastFocus.focus)lastFocus.focus();}
+$('#cardBtn').onclick=()=>{const go=()=>{const url=makeCard();$('#cardImg').src=url;const dl=$('#cardDl');dl.href=url;dl.download=`hansu-runner-${(cfg.name.trim()||'runner')}${cfg.num?'-'+cfg.num:''}.png`;$('#cardTitle').textContent=(cfg.name.trim()||'나의')+' 러너 카드';openModal('#cardModal');};(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go,go);};
+$('#cardClose').onclick=()=>closeModal('#cardModal');
+$('#clearBtn').onclick=()=>{if(!saved.length){toast('지울 러너가 없어요');return;}openModal('#confirmModal');};
+$('#confNo').onclick=()=>closeModal('#confirmModal');
+$('#confYes').onclick=()=>{saved=[];persist();renderGallery();setMode('edit');closeModal('#confirmModal');toast('러너 목록을 비웠어요');};
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal('#'+m.id);}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal.on').forEach(m=>closeModal('#'+m.id));});
+
+/* ---------- 갤러리 ---------- */
+let thumbs=[];
+const runnerLabel=c=>{const n=c.name.trim();return n&&c.num?`${n} · ${c.num}`:(n||(c.num?'No.'+c.num:'이름 없는 러너'));};
+function renderGallery(){
+  const grid=$('#grid');grid.innerHTML='';thumbs=[];$('#cnt').textContent=saved.length;
+  if(!saved.length){grid.innerHTML='<div class="empty">아직 등록된 러너가 없어요. 첫 번째 한수 러너가 되어 보세요!</div>';return;}
+  saved.forEach((r,i)=>{
+    const d=document.createElement('div');d.className='card';d.tabIndex=0;d.setAttribute('role','button');d.setAttribute('aria-label',runnerLabel(r.cfg)+' 불러오기');
+    const cv=mk(GW*3,GH*3);d.appendChild(cv);
+    const nm=document.createElement('div');nm.className='nm';nm.textContent=runnerLabel(r.cfg);d.appendChild(nm);
+    const del=document.createElement('button');del.type='button';del.className='del';del.textContent='×';del.setAttribute('aria-label',runnerLabel(r.cfg)+' 삭제');
+    del.onclick=e=>{e.stopPropagation();saved=saved.filter(s=>s.id!==r.id);persist();renderGallery();if(!saved.length)setMode('edit');};d.appendChild(del);
+    const load=()=>{cfg={...cfg,...r.cfg};setMode('edit');sync();toast(`${runnerLabel(r.cfg)} 러너를 불러왔어요`);};
+    d.onclick=load;d.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();load();}};
+    grid.appendChild(d);thumbs.push({cv,c:r.cfg,i});
+  });
+  lastThumb=null;
+}
+function drawThumbs(f){for(const t of thumbs){const x=t.cv.getContext('2d');x.clearRect(0,0,t.cv.width,t.cv.height);x.drawImage(renderSprite(t.c,f<0?-1:(f+t.i*3)%8,3),0,0);}}
+
+let toastT=0;
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2400);}
+
+/* ---------- 루프 ---------- */
+function loop(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;clock+=dt;
+  if(running){animT+=dt;scroll+=dt*26;paradeT+=dt;}
+  drawStage();
+  const tf=running?Math.floor(animT*11)%8:-1;if(tf!==lastThumb){lastThumb=tf;drawThumbs(tf);}
+  requestAnimationFrame(loop);
+}
+buildControls();sync();syncTheme();renderGallery();setMode('edit');
+if(document.fonts){Promise.all(['20px "Black Han Sans"','20px "Do Hyeon"','14px Silkscreen','700 14px Silkscreen'].map(f=>document.fonts.load(f).catch(()=>{}))).then(()=>{spriteCache.clear();textCache.clear();lastThumb=null;});}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
