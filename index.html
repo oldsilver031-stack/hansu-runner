@@ -76,6 +76,39 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
 .rank-note{margin:0 0 12px;font-size:16px;opacity:.75}
 .rank .empty{list-style:none}
 #stage.playing{cursor:pointer;touch-action:none}
+/* ---------- 모바일 게임 전용 화면 ---------- */
+.mg-top,.mg-pad{display:none}
+.m-only{display:none}
+@media (max-width:920px){.pc-only{display:none}.m-only{display:inline}}
+body.mgame{overflow:hidden;overscroll-behavior:none}
+body.mgame .stage-box{position:fixed;inset:0;z-index:45;border:0;box-shadow:none;display:flex;flex-direction:column;background:#1f1720;height:100vh;height:100dvh}
+body.mgame .bar,body.mgame .fs-exit{display:none}
+body.mgame .mg-top{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;color:#fff}
+.mg-score{flex:1;display:flex;gap:14px;align-items:baseline;font-family:'Silkscreen',monospace;font-weight:700;font-size:20px;white-space:nowrap;overflow:hidden}
+.mg-score .best{font-size:14px;color:#ffe066}
+.mg-score .coin{font-size:14px;color:#ffd27a}
+body.mgame .mg-top .btn{min-height:40px;padding:6px 12px;font-size:16px;box-shadow:none;flex:none}
+body.mgame .stage-wrap{flex:0 0 auto;position:relative}
+body.mgame #stage{width:100%;height:auto;border-top:3px solid #000;border-bottom:3px solid #000;background:#1f1720}
+.mg-rot{display:block;margin-top:6px;font-size:14px;opacity:.7}
+@media (orientation:landscape){.mg-rot{display:none}}
+body.mgame .mg-pad{display:flex;flex:1;min-height:0;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;padding:16px 16px calc(env(safe-area-inset-bottom) + 16px);cursor:pointer}
+.mg-jump{width:min(44vw,190px);aspect-ratio:1;border-radius:50%;background:var(--yellow);color:var(--ink);border:5px solid #fff;box-shadow:0 8px 0 #9c7c00;font-family:'Black Han Sans','Do Hyeon',sans-serif;font-size:36px;display:flex;align-items:center;justify-content:center;transition:transform .05s}
+.mg-pad.pressed .mg-jump{transform:translateY(6px);box-shadow:0 2px 0 #9c7c00}
+.mg-hint{font-size:16px;opacity:.85;text-align:center;line-height:1.55}
+.mg-hint b{color:#ffe066;font-weight:400}
+body.mgame .go{position:fixed;z-index:60}
+body.mgame .mg-top{position:relative;z-index:61;background:#1f1720}
+@media (orientation:landscape){
+  body.mgame .stage-box{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto 1fr}
+  body.mgame .mg-top{grid-column:1/3;padding-top:calc(env(safe-area-inset-top) + 4px);padding-bottom:4px}
+  body.mgame .stage-wrap{grid-column:1;grid-row:2;min-height:0;display:flex;align-items:center;justify-content:center;padding-left:env(safe-area-inset-left)}
+  body.mgame #stage{width:100%;height:100%;object-fit:contain;border:0}
+  body.mgame .mg-pad{grid-column:2;grid-row:2;width:min(30vw,190px);padding:8px 12px calc(env(safe-area-inset-bottom) + 8px) 8px;padding-right:calc(env(safe-area-inset-right) + 12px)}
+  .mg-jump{width:min(24vw,130px);font-size:28px}
+  .mg-hint{font-size:13px}
+}
+
 
 .panel{overflow:hidden}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:4px solid var(--ink)}
@@ -123,7 +156,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
 .modal img{width:100%;display:block;border:3px solid var(--ink)}
 .modal p{font-size:17px;margin:12px 0}
 .mbtns{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
-.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,160%);background:var(--ink);color:#fff;padding:12px 18px;font-size:19px;transition:transform .25s;z-index:60;border:3px solid #fff;box-shadow:4px 4px 0 rgba(0,0,0,.3);max-width:90vw;text-align:center}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,calc(100% + 60px));background:var(--ink);color:#fff;padding:12px 18px;font-size:19px;transition:transform .25s;z-index:60;border:3px solid #fff;box-shadow:4px 4px 0 rgba(0,0,0,.3);max-width:90vw;text-align:center}
 .toast.on{transform:translate(-50%,0)}
 </style>
 </head>
@@ -140,6 +173,10 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
   <div class="layout">
     <section>
       <div class="box stage-box" id="stageBox">
+        <div class="mg-top" aria-live="off">
+          <div class="mg-score"><span id="mgScore">SCORE 0</span><span class="best" id="mgBest">BEST 0</span><span class="coin" id="mgCoin">● 0</span></div>
+          <button class="btn" id="mgExit" type="button">그만하기</button>
+        </div>
         <div class="stage-wrap">
           <canvas id="stage" width="1024" height="576" aria-label="러너 미리보기 화면"></canvas>
           <div class="go" id="goPanel" hidden>
@@ -152,6 +189,10 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
             </div>
           </div>
         </div>
+        <div class="mg-pad" id="mgPad" role="button" aria-label="점프">
+          <div class="mg-jump">점프!</div>
+          <div class="mg-hint">아무 데나 탭하면 <b>점프</b>, 공중에서 한 번 더 탭하면 <b>2단 점프</b><br>비둘기가 날아오면 점프하지 말고 그대로 통과!<span class="mg-rot">휴대폰을 가로로 돌리면 화면이 더 커져요</span></div>
+        </div>
         <button class="btn fs-exit" id="fsExit" type="button">전체화면 닫기</button>
         <div class="bar">
           <button class="btn" id="runBtn" type="button">멈추기</button>
@@ -162,7 +203,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
           <button class="btn" id="fsBtn" type="button">전체화면</button>
         </div>
       </div>
-      <p class="tip">오른쪽에서 모습을 고르고, 다 만들면 <b>부스 러너로 등록하기</b>를 눌러 주세요. 등록한 러너들은 ‘다 함께 달리기’에서 같이 달리고, ‘장애물 달리기’로 내 러너와 게임도 할 수 있어요.</p>
+      <p class="tip"><span class="pc-only">오른쪽</span><span class="m-only">아래</span>에서 모습을 고르고, 다 만들면 <b>부스 러너로 등록하기</b>를 눌러 주세요. 등록한 러너들은 ‘다 함께 달리기’에서 같이 달리고, ‘장애물 달리기’로 내 러너와 게임도 할 수 있어요.</p>
     </section>
 
     <section class="box panel">
@@ -588,7 +629,8 @@ const themeSeg=$('#themeSeg');
 Object.entries(THEMES).forEach(([k,t])=>{const b=document.createElement('button');b.type='button';b.className='btn';b.textContent=t.label;b.dataset.v=k;b.onclick=()=>{theme=k;syncTheme();};themeSeg.appendChild(b);});
 function syncTheme(){themeSeg.querySelectorAll('.btn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===theme?'true':'false'));}
 $('#runBtn').onclick=()=>{running=!running;$('#runBtn').textContent=running?'멈추기':'달리기';};
-function setMode(m){mode=m;if(m==='game')newGame();else hideGO();stage.classList.toggle('playing',m==='game');['#gameBtn','#gameBtn2'].forEach(s=>{const b=$(s);if(!b)return;b.setAttribute('aria-pressed',m==='game'?'true':'false');b.textContent=m==='game'?'게임 끝내기':(s==='#gameBtn'?'장애물 달리기':'장애물 달리기 하기');});const on=m==='parade';['#paradeBtn','#paradeBtn2'].forEach(s=>{const b=$(s);b.setAttribute('aria-pressed',on?'true':'false');b.textContent=on?'내 러너로 돌아가기':'다 함께 달리기';});}
+function isMobileUI(){return (matchMedia&&matchMedia('(pointer:coarse)').matches)||innerWidth<760;}
+function setMode(m){mode=m;if(m==='game')newGame();else hideGO();document.body.classList.toggle('mgame',m==='game'&&isMobileUI());stage.classList.toggle('playing',m==='game');['#gameBtn','#gameBtn2'].forEach(s=>{const b=$(s);if(!b)return;b.setAttribute('aria-pressed',m==='game'?'true':'false');b.textContent=m==='game'?'게임 끝내기':(s==='#gameBtn'?'장애물 달리기':'장애물 달리기 하기');});const on=m==='parade';['#paradeBtn','#paradeBtn2'].forEach(s=>{const b=$(s);b.setAttribute('aria-pressed',on?'true':'false');b.textContent=on?'내 러너로 돌아가기':'다 함께 달리기';});}
 function toggleParade(){if(mode==='parade'){setMode('edit');return;}if(!saved.length){toast('먼저 ‘부스 러너로 등록하기’로 러너를 등록해 주세요');return;}setMode('parade');if(innerWidth<920)$('#stageBox').scrollIntoView({behavior:'smooth',block:'center'});}
 $('#paradeBtn').onclick=toggleParade;$('#paradeBtn2').onclick=toggleParade;
 $('#fsBtn').onclick=()=>{const el=$('#stageBox');const req=el.requestFullscreen||el.webkitRequestFullscreen;if(!req){toast('이 화면에서는 전체화면을 쓸 수 없어요');return;}try{const p=req.call(el);if(p&&p.catch)p.catch(()=>toast('이 화면에서는 전체화면을 쓸 수 없어요'));}catch(e){toast('이 화면에서는 전체화면을 쓸 수 없어요');}};
@@ -764,12 +806,20 @@ function drawGame(x){
   const sw=Math.max(18,48-G.y*2.2);x.fillStyle='rgba(25,15,30,.22)';x.fillRect(Math.round((P_X+9.5)*K-sw/2),GROUND*K-4,sw,6);
   x.drawImage(renderSprite(cfg,f,k),P_X*K,Math.round((feet-(FOOT-1)/2)*K));
   if(G.state==='over'){const hx=(P_X+9.5)*K,hy=(feet-19)*K;for(let i=0;i<3;i++){const a=clock*4+i*2.09,sx=Math.round(hx+Math.cos(a)*30),sy=Math.round(hy+Math.sin(a)*10);x.fillStyle='#ffe066';x.fillRect(sx-2,sy-6,4,12);x.fillRect(sx-6,sy-2,12,4);}}
-  // 점수판
+  // 점수판 (모바일 전용 화면에서는 위쪽 막대에 표시)
+  if(!document.body.classList.contains('mgame')){
   x.textBaseline='top';x.textAlign='right';x.font='700 26px Silkscreen,monospace';
   x.fillStyle='rgba(20,14,24,.55)';x.fillText('SCORE '+G.score,1006,20);x.fillStyle='#fff';x.fillText('SCORE '+G.score,1003,17);
   x.font='700 18px Silkscreen,monospace';x.fillStyle='rgba(20,14,24,.55)';x.fillText('BEST '+getBest(),1006,52);x.fillStyle='#ffe066';x.fillText('BEST '+getBest(),1003,49);
   x.textAlign='left';x.drawImage(OBS.coin[0].c,19,52,27,27);x.font='700 20px Silkscreen,monospace';x.fillStyle='rgba(20,14,24,.55)';x.fillText('× '+G.coins,55,57);x.fillStyle='#fff';x.fillText('× '+G.coins,53,55);
-  if(G.state==='ready'){
+  }
+  x.textBaseline='top';
+  const mob=document.body.classList.contains('mgame');
+  if(mob){const sc='SCORE '+G.score,b='BEST '+getBest(),c='● '+G.coins;if($('#mgScore').textContent!==sc)$('#mgScore').textContent=sc;if($('#mgBest').textContent!==b)$('#mgBest').textContent=b;if($('#mgCoin').textContent!==c)$('#mgCoin').textContent=c;}
+  if(G.state==='ready'&&mob){
+    box(x,560,230,620,190);x.textAlign='center';x.fillStyle='#ffe066';x.font='64px "Do Hyeon",sans-serif';x.fillText('장애물 달리기',560,150);
+    x.fillStyle='#fff';x.font='44px "Do Hyeon",sans-serif';x.fillText('점프 버튼을 누르면 출발!',560,232);x.textAlign='left';
+  }else if(G.state==='ready'){
     box(x,560,240,700,250);x.textAlign='center';
     x.fillStyle='#ffe066';x.font='44px "Do Hyeon",sans-serif';x.fillText('장애물 달리기',560,138);
     x.fillStyle='#fff';x.font='26px "Do Hyeon",sans-serif';
@@ -850,7 +900,9 @@ function flushPending(){
 }
 if(RANK_API){fetchTop();flushPending();setInterval(()=>{if(document.visibilityState==='visible'){fetchTop();flushPending();}},30000);
   addEventListener('online',()=>{fetchTop();flushPending();});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')fetchTop();});}
-function toggleGame(){if(mode==='game'){setMode('edit');return;}setMode('game');if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();$('#stageBox').scrollIntoView({behavior:'smooth',block:'center'});}
+function toggleGame(){if(mode==='game'){setMode('edit');return;}setMode('game');if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();if(!document.body.classList.contains('mgame'))$('#stageBox').scrollIntoView({behavior:'smooth',block:'center'});}
+$('#mgExit').onclick=()=>setMode('edit');
+{const pad=$('#mgPad');pad.addEventListener('pointerdown',e=>{if(mode!=='game')return;e.preventDefault();jump();pad.classList.add('pressed');setTimeout(()=>pad.classList.remove('pressed'),90);});pad.addEventListener('contextmenu',e=>e.preventDefault());}
 stage.addEventListener('pointerdown',e=>{if(mode==='game'){e.preventDefault();jump();}});
 document.addEventListener('keydown',e=>{
   if(mode!=='game')return;const tg=e.target;if(tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'))return;
