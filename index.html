@@ -53,15 +53,25 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
 .stage-wrap{position:relative}
 .go{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(18,12,22,.45);padding:12px}
 .go[hidden]{display:none}
-.go-box{background:var(--paper2);border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:16px 20px;text-align:center;width:min(420px,100%)}
+.go-box{background:var(--paper2);border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:16px 20px;text-align:center;width:min(440px,100%);max-height:100%;overflow:auto}
 .go-t{font-size:24px}
 .go-score{font-family:'Silkscreen',monospace;font-weight:700;font-size:44px;line-height:1.2;margin:4px 0}
 .go-score span{font-family:inherit}
 .go-sub{font-size:17px;opacity:.8;margin-bottom:12px}
+.go-box.has-pi{padding:12px 16px}.go-box.has-pi .go-t{font-size:21px}.go-box.has-pi .go-score{font-size:36px;margin:0}.go-box.has-pi .go-sub{margin-bottom:8px}
 .go-reg{display:flex;gap:8px;margin-bottom:10px}
 .go-reg input{flex:1;min-width:0;font-family:inherit;font-size:20px;padding:8px 10px;border:3px solid var(--ink)}
+.go-reg input{font-size:18px}
+.go-reg #goPhone{flex:1.3}
+.go-pi{text-align:left;font-size:14px;line-height:1.4;margin:-2px 0 10px}
+.go-pi-note{margin:0 0 4px}
+.go-agree{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.go-agree input{width:18px;height:18px;margin:2px 0 0;flex:none;accent-color:var(--green)}
+.go-pi details{margin:4px 0 0 26px;opacity:.85}
+.go-pi summary{cursor:pointer;text-decoration:underline}
+.go-pi ul{margin:4px 0 0;padding-left:18px}
+.go-btns{display:flex;gap:8px}
 .go .btn{width:100%}
-.go-reg .btn{width:auto;white-space:nowrap}
 .btn:disabled{opacity:.6;cursor:default}
 .rank{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .rk{display:grid;grid-template-columns:44px 40px 1fr auto;align-items:center;gap:12px;border:3px solid var(--ink);background:#fff;padding:6px 14px 6px 8px}
@@ -177,8 +187,19 @@ body.mgame .go{position:fixed;z-index:60;cursor:default}
               <div class="go-t">앗, 부딪혔어요!</div>
               <div class="go-score"><span id="goScore">0</span>점</div>
               <div class="go-sub" id="goSub"></div>
-              <div class="go-reg"><input id="goName" maxlength="6" autocomplete="off" placeholder="이름 (최대 6자)" aria-label="랭킹에 올릴 이름"><button class="btn primary" id="goRegBtn" type="button">랭킹 등록</button></div>
-              <button class="btn" id="goRetry" type="button">다시 달리기</button>
+              <div class="go-reg"><input id="goName" maxlength="6" autocomplete="off" placeholder="이름 (최대 6자)" aria-label="랭킹에 올릴 이름"><input id="goPhone" type="tel" inputmode="numeric" maxlength="13" autocomplete="off" placeholder="휴대폰 (선택)" aria-label="경품 연락용 휴대폰 번호 (선택)" hidden></div>
+              <div class="go-pi" id="goPi" hidden>
+                <p class="go-pi-note">휴대폰 번호는 <b>선택</b>이에요. 입력하지 않으면 <b>경품 추첨 대상에서 제외</b>돼요.</p>
+                <label class="go-agree"><input type="checkbox" id="goAgree"><span>경품 추첨·연락을 위한 휴대폰 번호 수집·이용에 동의해요</span></label>
+                <details><summary>수집 안내 보기</summary><ul>
+                  <li>수집 항목: 휴대폰 번호</li>
+                  <li>이용 목적: 경품 추첨, 당첨 연락과 경품 전달</li>
+                  <li>보유 기간: 경품 전달이 끝나면 바로 파기</li>
+                  <li>동의하지 않아도 랭킹 등록은 돼요. 다만 경품 추첨 대상에서 제외돼요.</li>
+                  <li>번호는 랭킹 화면에 보이지 않아요.</li>
+                </ul></details>
+              </div>
+              <div class="go-btns"><button class="btn primary" id="goRegBtn" type="button">랭킹 등록</button><button class="btn" id="goRetry" type="button">다시 달리기</button></div>
             </div>
           </div>
         </div>
@@ -825,14 +846,21 @@ function showGO(){
   $('#goScore').textContent=G.score;
   $('#goSub').textContent=(G.newBest?'최고 기록 달성! · ':'최고 기록 '+getBest()+'점 · ')+'성돌 '+G.coins+'개';
   $('#goName').value=cfg.name.trim();$('#goRegBtn').disabled=false;$('#goRegBtn').textContent='랭킹 등록';
+  // 연락처는 다음 사람에게 남지 않도록 매번 비우고, 온라인 랭킹일 때만 받음
+  $('#goPhone').value='';$('#goAgree').checked=false;$('#goPhone').hidden=$('#goPi').hidden=!RANK_API;$('.go-box').classList.toggle('has-pi',!!RANK_API);$('.go-box').scrollTop=0;
   $('#goPanel').hidden=false;
 }
+// 휴대폰 번호: 빈칸이면 '', 형식이 틀리면 null, 맞으면 010-1234-5678 꼴
+function normPhone(v){const d=String(v||'').replace(/\D/g,'');if(!d)return'';if(!/^01[016789]\d{7,8}$/.test(d))return null;return d.length===10?d.replace(/(\d{3})(\d{3})(\d{4})/,'$1-$2-$3'):d.replace(/(\d{3})(\d{4})(\d{4})/,'$1-$2-$3');}
 function hideGO(){const p=$('#goPanel');if(p)p.hidden=true;}
 function cfgOnly(c){const o={};for(const k of KEYS)if(k!=='name'&&k!=='num')o[k]=c[k];return o;}
 function registerRank(){
   if(!G||G.state!=='over')return;
   const name=$('#goName').value.trim().slice(0,6);
   if(!name){toast('랭킹에 올릴 이름을 적어 주세요');$('#goName').focus();return;}
+  const phone=RANK_API?normPhone($('#goPhone').value):'';
+  if(phone===null){toast('휴대폰 번호를 확인해 주세요 (예: 010-1234-5678)');$('#goPhone').focus();return;}
+  if(phone&&!$('#goAgree').checked){toast('경품 추첨에 참여하려면 개인정보 수집·이용에 동의해 주세요');$('#goAgree').focus();return;}
   const g=G,btn=$('#goRegBtn');
   // 이 기기에도 항상 백업 저장
   const entry={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,num:cfg.num,score:g.score,coins:g.coins,cfg:{...cfg,name},at:Date.now()};
@@ -841,11 +869,12 @@ function registerRank(){
   btn.disabled=true;
   if(!RANK_API||!g.sid){
     btn.textContent=localPos?'이 기기 '+localPos+'위 저장':'저장 완료';renderRanks();
-    toast(RANK_API?'온라인 랭킹에 연결하지 못해 이 기기에만 저장했어요':`${name} 러너, 이 기기 랭킹 ${localPos}위!`);return;
+    toast(RANK_API?'온라인 랭킹에 연결하지 못해 이 기기에만 저장했어요'+(phone?' (휴대폰 번호는 저장하지 않았어요)':''):`${name} 러너, 이 기기 랭킹 ${localPos}위!`);return;
   }
   btn.textContent='등록 중…';
   const payload={action:'submit',sid:g.sid,name,num:cfg.num,score:g.score,coins:g.coins,cfg:cfgOnly(cfg)};
-  g.sid=null;
+  if(phone){payload.phone=phone;payload.agree=true;}
+  g.sid=null;$('#goPhone').value='';$('#goAgree').checked=false;
   sendScore(payload).then(d=>{
     if(d.ok){online.ok=true;online.top=d.top||online.top;btn.textContent='전체 '+d.rank+'위 등록 완료';renderRanks();toast(d.rank<=10?`${name} 러너, 전체 랭킹 ${d.rank}위!`:`${name} 러너, 전체 ${d.rank}위로 등록했어요`);}
     else{btn.textContent='등록 실패';toast(d.error||'등록하지 못했어요');}
@@ -903,6 +932,8 @@ document.addEventListener('keydown',e=>{
 });
 $('#goRetry').onclick=retry;$('#goRegBtn').onclick=registerRank;
 $('#goName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();registerRank();}});
+$('#goPhone').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();registerRank();}});
+$('#goPhone').addEventListener('input',e=>{const d=e.target.value.replace(/\D/g,'').slice(0,11);e.target.value=d.length<4?d:d.length<8?d.slice(0,3)+'-'+d.slice(3):d.slice(0,3)+'-'+d.slice(3,d.length-4)+'-'+d.slice(-4);});
 $('#gameBtn').onclick=toggleGame;$('#gameBtn2').onclick=toggleGame;
 $('#rankClear').onclick=()=>{if(!ranks.length){toast('지울 기록이 없어요');return;}askConfirm('랭킹 기록을 모두 지울까요?','이 기기에 저장된 장애물 달리기 기록이 모두 사라져요. 되돌릴 수 없어요.','모두 지우기',()=>{ranks=[];saveRanks();setBest(0);renderRanks();toast('랭킹을 비웠어요');});};
 
