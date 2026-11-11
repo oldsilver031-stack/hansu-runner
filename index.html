@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>한수RunLearn 도트 러너 만들기</title>
-<meta name="description" content="한양도성을 함께 달릴 나만의 도트 러너를 만들어 보세요. Run, Learn Hansu!">
+<meta name="description" content="한양의 수도성곽을 함께 달릴 나만의 도트 러너를 만들고 장애물 달리기에 도전해 보세요. Run, Learn Hansu!">
 <meta property="og:title" content="한수RunLearn 도트 러너 만들기">
-<meta property="og:description" content="한양도성을 함께 달릴 나만의 도트 러너를 만들어 보세요. Run, Learn Hansu!">
+<meta property="og:description" content="한양의 수도성곽을 함께 달릴 나만의 도트 러너를 만들고 장애물 달리기에 도전해 보세요. Run, Learn Hansu!">
 <meta name="theme-color" content="#2f8f7a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,6 +50,28 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
 .stage-box:fullscreen .bar{display:none}
 .stage-box:fullscreen .fs-exit{display:block}
 .tip{margin:14px 2px 0;font-size:17px;opacity:.8}
+.stage-wrap{position:relative}
+.go{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(18,12,22,.45);padding:12px}
+.go[hidden]{display:none}
+.go-box{background:var(--paper2);border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:16px 20px;text-align:center;width:min(420px,100%)}
+.go-t{font-size:24px}
+.go-score{font-family:'Silkscreen',monospace;font-weight:700;font-size:44px;line-height:1.2;margin:4px 0}
+.go-score span{font-family:inherit}
+.go-sub{font-size:17px;opacity:.8;margin-bottom:12px}
+.go-reg{display:flex;gap:8px;margin-bottom:10px}
+.go-reg input{flex:1;min-width:0;font-family:inherit;font-size:20px;padding:8px 10px;border:3px solid var(--ink)}
+.go .btn{width:100%}
+.go-reg .btn{width:auto;white-space:nowrap}
+.btn:disabled{opacity:.6;cursor:default}
+.rank{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.rk{display:grid;grid-template-columns:44px 40px 1fr auto;align-items:center;gap:12px;border:3px solid var(--ink);background:#fff;padding:6px 14px 6px 8px}
+.rk.top1{background:#fff3c4}.rk.top2{background:#eef1f5}.rk.top3{background:#f7e3d3}
+.rk-n{font-family:'Silkscreen',monospace;font-weight:700;font-size:22px;text-align:center}
+.rk-c{width:40px;height:auto;image-rendering:pixelated}
+.rk-name{font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rk-s{font-family:'Silkscreen',monospace;font-weight:700;font-size:20px}
+.rank .empty{list-style:none}
+#stage.playing{cursor:pointer;touch-action:none}
 
 .panel{overflow:hidden}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:4px solid var(--ink)}
@@ -106,7 +128,7 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
   <header>
     <div>
       <div class="logo"><span class="ko">한수</span><span class="en">RunLearn</span></div>
-      <div class="sub">한양도성을 함께 달릴 나만의 도트 러너를 만들어 보세요</div>
+      <div class="sub">한양의 수도성곽을 함께 달릴 나만의 도트 러너를 만들어 보세요</div>
     </div>
     <div class="slogan">RUN, LEARN HANSU!</div>
   </header>
@@ -114,17 +136,29 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
   <div class="layout">
     <section>
       <div class="box stage-box" id="stageBox">
-        <canvas id="stage" width="1024" height="576" aria-label="러너 미리보기 화면"></canvas>
+        <div class="stage-wrap">
+          <canvas id="stage" width="1024" height="576" aria-label="러너 미리보기 화면"></canvas>
+          <div class="go" id="goPanel" hidden>
+            <div class="go-box" role="dialog" aria-label="게임 결과">
+              <div class="go-t">앗, 부딪혔어요!</div>
+              <div class="go-score"><span id="goScore">0</span>점</div>
+              <div class="go-sub" id="goSub"></div>
+              <div class="go-reg"><input id="goName" maxlength="6" autocomplete="off" placeholder="이름 (최대 6자)" aria-label="랭킹에 올릴 이름"><button class="btn primary" id="goRegBtn" type="button">랭킹 등록</button></div>
+              <button class="btn" id="goRetry" type="button">다시 달리기</button>
+            </div>
+          </div>
+        </div>
         <button class="btn fs-exit" id="fsExit" type="button">전체화면 닫기</button>
         <div class="bar">
           <button class="btn" id="runBtn" type="button">멈추기</button>
           <div class="seg" id="themeSeg" role="group" aria-label="배경 시간대"></div>
           <span class="spacer"></span>
+          <button class="btn primary" id="gameBtn" type="button" aria-pressed="false">장애물 달리기</button>
           <button class="btn" id="paradeBtn" type="button" aria-pressed="false">다 함께 달리기</button>
           <button class="btn" id="fsBtn" type="button">전체화면</button>
         </div>
       </div>
-      <p class="tip">오른쪽에서 모습을 고르고, 다 만들면 <b>부스 러너로 등록하기</b>를 눌러 주세요. 등록한 러너들은 ‘다 함께 달리기’에서 같이 달려요.</p>
+      <p class="tip">오른쪽에서 모습을 고르고, 다 만들면 <b>부스 러너로 등록하기</b>를 눌러 주세요. 등록한 러너들은 ‘다 함께 달리기’에서 같이 달리고, ‘장애물 달리기’로 내 러너와 게임도 할 수 있어요.</p>
     </section>
 
     <section class="box panel">
@@ -147,6 +181,19 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
       </div>
     </div>
     <div class="grid" id="grid"></div>
+  </section>
+</div>
+
+<div class="wrap" style="padding-top:0">
+  <section class="box gallery" style="margin-top:0">
+    <div class="ghead">
+      <h2>장애물 달리기 랭킹 TOP 10</h2>
+      <div class="gbtns">
+        <button class="btn primary" id="gameBtn2" type="button">장애물 달리기 하기</button>
+        <button class="btn" id="rankClear" type="button">랭킹 비우기</button>
+      </div>
+    </div>
+    <ol class="rank" id="rankList"></ol>
   </section>
 </div>
 
@@ -455,7 +502,7 @@ const stage=$('#stage'),sctx=stage.getContext('2d');
 function drawStage(){
   const x=sctx;x.imageSmoothingEnabled=false;
   drawScene(x,K,SW,0,{mtn:scroll*.08,hill:scroll*.2,wall:scroll*.45,ground:scroll,cloud:scroll*.04+clock*.8},theme,clock);
-  if(mode==='parade'&&saved.length)drawParade(x);else drawHero(x);
+  if(mode==='game'&&G)drawGame(x);else if(mode==='parade'&&saved.length)drawParade(x);else drawHero(x);
   hud(x);
 }
 function drawHero(x){
@@ -497,7 +544,7 @@ function buildControls(){
     b.onclick=()=>selectTab(ti);tabs.appendChild(b);
     const p=document.createElement('div');p.className='tabpanel'+(ti===0?' on':'');p.id='panel'+ti;p.role='tabpanel';p.setAttribute('aria-labelledby','tab'+ti);panels.appendChild(p);
     if(tab.special){
-      p.insertAdjacentHTML('beforeend',`<div class="field"><label for="nameIn">이름 (최대 6자)</label><input id="nameIn" maxlength="6" autocomplete="off" placeholder="예: 고은"></div>
+      p.insertAdjacentHTML('beforeend',`<div class="field"><label for="nameIn">이름 (최대 6자)</label><input id="nameIn" maxlength="6" autocomplete="off" placeholder="예: 한수"></div>
       <div class="field"><label for="numIn">번호 (숫자 최대 4자리)</label><input id="numIn" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="예: 1112"></div>
       <p class="hint">이름은 머리 위 이름표와 몸통에, 번호는 몸통에 들어가요. 둘 다 넣으면 이름은 작게, 번호는 크게 표시돼요.</p>`);
     }
@@ -522,7 +569,7 @@ function buildControls(){
 }
 function selectTab(i){document.querySelectorAll('.tab').forEach((t,j)=>t.setAttribute('aria-selected',j===i?'true':'false'));document.querySelectorAll('.tabpanel').forEach((p,j)=>p.classList.toggle('on',j===i));}
 function setVal(k,v){cfg[k]=v;changed(true);}
-function changed(){if(mode==='parade')setMode('edit');sync();}
+function changed(){if(mode!=='edit')setMode('edit');sync();}
 function sync(){
   for(const c of controls){const v=cfg[c.def.key];let hit=false;
     c.wrap.querySelectorAll('[data-v]').forEach(b=>{const on=b.dataset.v===v;if(on)hit=true;b.setAttribute('aria-pressed',on?'true':'false');});
@@ -536,7 +583,7 @@ const themeSeg=$('#themeSeg');
 Object.entries(THEMES).forEach(([k,t])=>{const b=document.createElement('button');b.type='button';b.className='btn';b.textContent=t.label;b.dataset.v=k;b.onclick=()=>{theme=k;syncTheme();};themeSeg.appendChild(b);});
 function syncTheme(){themeSeg.querySelectorAll('.btn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===theme?'true':'false'));}
 $('#runBtn').onclick=()=>{running=!running;$('#runBtn').textContent=running?'멈추기':'달리기';};
-function setMode(m){mode=m;const on=m==='parade';['#paradeBtn','#paradeBtn2'].forEach(s=>{const b=$(s);b.setAttribute('aria-pressed',on?'true':'false');b.textContent=on?'내 러너로 돌아가기':'다 함께 달리기';});}
+function setMode(m){mode=m;if(m==='game')newGame();else hideGO();stage.classList.toggle('playing',m==='game');['#gameBtn','#gameBtn2'].forEach(s=>{const b=$(s);if(!b)return;b.setAttribute('aria-pressed',m==='game'?'true':'false');b.textContent=m==='game'?'게임 끝내기':(s==='#gameBtn'?'장애물 달리기':'장애물 달리기 하기');});const on=m==='parade';['#paradeBtn','#paradeBtn2'].forEach(s=>{const b=$(s);b.setAttribute('aria-pressed',on?'true':'false');b.textContent=on?'내 러너로 돌아가기':'다 함께 달리기';});}
 function toggleParade(){if(mode==='parade'){setMode('edit');return;}if(!saved.length){toast('먼저 ‘부스 러너로 등록하기’로 러너를 등록해 주세요');return;}setMode('parade');if(innerWidth<920)$('#stageBox').scrollIntoView({behavior:'smooth',block:'center'});}
 $('#paradeBtn').onclick=toggleParade;$('#paradeBtn2').onclick=toggleParade;
 $('#fsBtn').onclick=()=>{const el=$('#stageBox');const req=el.requestFullscreen||el.webkitRequestFullscreen;if(!req){toast('이 화면에서는 전체화면을 쓸 수 없어요');return;}try{const p=req.call(el);if(p&&p.catch)p.catch(()=>toast('이 화면에서는 전체화면을 쓸 수 없어요'));}catch(e){toast('이 화면에서는 전체화면을 쓸 수 없어요');}};
@@ -573,9 +620,11 @@ function openModal(s){lastFocus=document.activeElement;$(s).classList.add('on');
 function closeModal(s){$(s).classList.remove('on');if(lastFocus&&lastFocus.focus)lastFocus.focus();}
 $('#cardBtn').onclick=()=>{const go=()=>{const url=makeCard();$('#cardImg').src=url;const dl=$('#cardDl');dl.href=url;dl.download=`hansu-runner-${(cfg.name.trim()||'runner')}${cfg.num?'-'+cfg.num:''}.png`;$('#cardTitle').textContent=(cfg.name.trim()||'나의')+' 러너 카드';openModal('#cardModal');};(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go,go);};
 $('#cardClose').onclick=()=>closeModal('#cardModal');
-$('#clearBtn').onclick=()=>{if(!saved.length){toast('지울 러너가 없어요');return;}openModal('#confirmModal');};
+let confirmFn=null;
+function askConfirm(title,body,yes,fn){$('#confTitle').textContent=title;$('#confirmModal p').textContent=body;$('#confYes').textContent=yes;confirmFn=fn;openModal('#confirmModal');}
+$('#clearBtn').onclick=()=>{if(!saved.length){toast('지울 러너가 없어요');return;}askConfirm('등록된 러너를 모두 지울까요?','이 기기에 저장된 오늘의 러너 목록이 모두 사라져요. 되돌릴 수 없어요.','모두 지우기',()=>{saved=[];persist();renderGallery();if(mode==='parade')setMode('edit');toast('러너 목록을 비웠어요');});};
 $('#confNo').onclick=()=>closeModal('#confirmModal');
-$('#confYes').onclick=()=>{saved=[];persist();renderGallery();setMode('edit');closeModal('#confirmModal');toast('러너 목록을 비웠어요');};
+$('#confYes').onclick=()=>{closeModal('#confirmModal');if(confirmFn){const f=confirmFn;confirmFn=null;f();}};
 document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal('#'+m.id);}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal.on').forEach(m=>closeModal('#'+m.id));});
 
@@ -602,15 +651,174 @@ function drawThumbs(f){for(const t of thumbs){const x=t.cv.getContext('2d');x.cl
 let toastT=0;
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2400);}
 
+/* ---------- 장애물 달리기 ---------- */
+const PXS=4; // 장애물 도트 1칸 = 4px = 반 칸(캐릭터 도트와 같은 크기)
+function pixSprite(w,h,paint){
+  const g=new Array(w*h).fill(null);
+  const api={
+    shape(test,col){const m=[];for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(test(x+.5,y+.5))m.push(y*w+x);
+      const S=new Set(m);
+      for(const i of m){const x=i%w,y=(i/w)|0;for(const[dx,dy]of N4){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=w||ny>=h)continue;const j=ny*w+nx;if(!S.has(j))g[j]=OUT;}}
+      for(const i of m){const x=i%w,y=(i/w)|0;g[i]=typeof col==='function'?col(x,y):col;}},
+    set(x,y,c){if(x>=0&&y>=0&&x<w&&y<h)g[y*w+x]=c;}
+  };
+  paint(api);
+  const c=mk(w*PXS,h*PXS),x=c.getContext('2d');
+  for(let i=0;i<g.length;i++)if(g[i]){x.fillStyle=g[i];x.fillRect((i%w)*PXS,((i/w)|0)*PXS,PXS,PXS);}
+  return{c,w:w/2,h:h/2};
+}
+const OBS={};
+(function buildObstacles(){
+  const ell=(cx,cy,rx,ry)=>(x,y)=>((x-cx)/rx)**2+((y-cy)/ry)**2<=1;
+  // 돌무더기
+  OBS.stone=pixSprite(17,12,a=>{
+    const st=(cx,cy,rx,ry)=>a.shape(ell(cx,cy,rx,ry),(x,y)=>{const dy=y+.5-cy,dx=x+.5-cx;if(dy<-ry*.3&&dx<rx*.25)return'#dcd5c6';if(dy>ry*.4)return'#968d7c';return'#b8af9d';});
+    st(5,7.6,4,3.2);st(12,8,3.6,2.9);st(8.5,4.3,3.3,2.6);
+  });
+  // 라바콘
+  OBS.cone=pixSprite(12,18,a=>{
+    a.shape((x,y)=>y>=14&&y<16.5&&x>=1&&x<11,(x,y)=>y>=16?'#26252b':'#3d3d45');
+    a.shape((x,y)=>{if(y<1.5||y>14.5)return false;const hw=.8+(y-1.5)*.33;return Math.abs(x-6)<=hw;},(x,y)=>((y>=5&&y<7)||(y>=10&&y<12))?'#f4f4ef':(x<6?'#f28c28':'#d9731b'));
+  });
+  // 공사 바리케이드
+  OBS.barrier=pixSprite(24,16,a=>{
+    const leg=x0=>a.shape((x,y)=>x>=x0&&x<x0+2&&y>=6&&y<14.5,'#8b4a2f');leg(4);leg(18);
+    a.shape((x,y)=>y>=13.5&&y<15&&((x>=2.5&&x<8)||(x>=16.5&&x<22)),'#5e3320');
+    a.shape((x,y)=>x>=1&&x<23&&y>=2&&y<8,(x,y)=>((x+y)%6<3)?'#f5c518':'#26232b');
+  });
+  // 비둘기 (날갯짓 2프레임)
+  const pig=up=>pixSprite(18,12,a=>{
+    a.shape(ell(10,6.5,5.5,3),(x,y)=>y>7?'#b4bccb':'#5f6b80');
+    a.shape((x,y)=>x>=14.5&&x<17&&y>=5&&y<8,'#3f4858');
+    a.shape(ell(4.6,4.6,2.6,2.4),'#4f5a6e');
+    a.set(3,4,'#ffffff');a.set(3,3,'#1a1420');a.set(1,5,'#e0a050');a.set(5,6,'#4c9a7a');a.set(6,6,'#7a5aa0');
+    if(up)a.shape((x,y)=>y>=1&&y<5&&x>=8&&x<14-(5-y)*.5,'#3f4858');
+    else a.shape((x,y)=>y>=7&&y<11&&x>=8&&x<13.5-(y-7)*.7,'#3f4858');
+  });
+  OBS.pigeon=[pig(true),pig(false)];
+  // 성돌 동전 (회전 2프레임)
+  const coin=wide=>pixSprite(9,9,a=>{a.shape(ell(4.5,4.5,wide?3.6:1.7,3.6),(x,y)=>x+y<7?'#ffe27a':'#f5b81a');
+    if(wide)[[4,3],[3,4],[4,4],[5,4],[4,5]].forEach(([x,y])=>a.set(x,y,'#c98d10'));});
+  OBS.coin=[coin(true),coin(false)];
+})();
+
+const P_X=12, GROUND=66, GRAV=260, J1=82, J2=70, BEST_KEY='hansu-runner-best', RANK_KEY='hansu-runner-rank-v1';
+let G=null;
+let ranks=[];try{ranks=JSON.parse(localStorage.getItem(RANK_KEY)||'[]');if(!Array.isArray(ranks))ranks=[];}catch(e){ranks=[];}
+function saveRanks(){try{localStorage.setItem(RANK_KEY,JSON.stringify(ranks));}catch(e){}}
+function getBest(){let b=0;try{b=+localStorage.getItem(BEST_KEY)||0;}catch(e){}return Math.max(b,ranks.length?ranks[0].score:0);}
+function setBest(v){try{localStorage.setItem(BEST_KEY,String(v));}catch(e){}}
+function newGame(){G={state:'ready',y:0,vy:0,jumps:0,t:0,dist:0,speed:42,coins:0,obs:[],items:[],nextAt:46,score:0,anim:0,overT:0,newBest:false};hideGO();}
+function jump(){
+  if(mode!=='game'||!G)return;
+  if(G.state==='ready'){G.state='play';G.vy=J1;G.jumps=1;return;}
+  if(G.state==='over'){if(G.overT>.6)retry();return;}
+  if(!running)return;
+  if(G.jumps===0){G.vy=J1;G.jumps=1;}else if(G.jumps<2){G.vy=J2;G.jumps=2;}
+}
+function spawn(){
+  const wx=G.dist+SW+6,r=Math.random();
+  let type='stone';
+  if(G.t>8&&r<.2)type='pigeon';else if(G.speed>55&&r<.38)type='barrier';else if(r<.66)type='cone';
+  const S=type==='pigeon'?OBS.pigeon[0]:OBS[type];
+  G.obs.push({type,wx,w:S.w,h:S.h,lift:type==='pigeon'?24:0});
+  if(Math.random()<.6){
+    if(type==='pigeon')for(let i=0;i<4;i++)G.items.push({wx:wx-2+i*4.5,hy:3});
+    else{const cx=wx+S.w/2-2.25;[[-5,10],[0,14],[5,10]].forEach(([dx,hy])=>G.items.push({wx:cx+dx,hy}));}
+  }
+  G.nextAt=G.dist+30+Math.random()*26+G.speed*.4+(type==='pigeon'||type==='barrier'?10:0);
+}
+function updateGame(dt){
+  if(G.state==='over'){G.overT+=dt;return;}
+  if(G.state!=='play')return;
+  G.t+=dt;G.speed=Math.min(98,42+G.t*1.5);G.dist+=G.speed*dt;G.anim+=dt*G.speed/42;
+  G.vy-=GRAV*dt;G.y+=G.vy*dt;if(G.y<=0){G.y=0;G.vy=0;G.jumps=0;}
+  for(const o of G.obs)if(o.type==='pigeon')o.wx-=12*dt;
+  if(G.dist>=G.nextAt)spawn();
+  G.obs=G.obs.filter(o=>o.wx-G.dist>-20);G.items=G.items.filter(c=>!c.got&&c.wx-G.dist>-10);
+  const feet=GROUND-G.y,pb={x0:P_X+7,x1:P_X+12,y0:feet-19.5,y1:feet-.5};
+  for(const c of G.items){const sx=c.wx-G.dist,cy=GROUND-c.hy;if(pb.x0<sx+4.5&&pb.x1>sx&&pb.y0<cy&&pb.y1>cy-4.5){c.got=true;G.coins++;}}
+  G.score=Math.floor(G.dist/4)+G.coins*10;
+  for(const o of G.obs){const sx=o.wx-G.dist,ins=o.type==='cone'?1.5:1;
+    const b={x0:sx+ins,x1:sx+o.w-ins,y0:GROUND-o.lift-o.h+ins,y1:GROUND-o.lift-.3};
+    if(pb.x0<b.x1&&pb.x1>b.x0&&pb.y0<b.y1&&pb.y1>b.y0){crash();break;}}
+}
+function crash(){G.state='over';G.overT=0;const best=getBest();G.newBest=G.score>best;if(G.newBest)setBest(G.score);showGO();}
+function retry(){newGame();G.state='play';}
+function box(x,cx,cy,w,h){x.fillStyle='rgba(20,14,26,.82)';x.fillRect(cx-w/2,cy-h/2,w,h);x.fillStyle='#ffe066';x.fillRect(cx-w/2,cy-h/2,w,6);}
+function drawGame(x){
+  const k=4,cf=Math.floor(clock*6)%2;
+  for(const c of G.items){if(c.got)continue;const sx=(c.wx-G.dist)*K,sy=(GROUND-c.hy-4.5)*K+Math.round(Math.sin(clock*5+c.wx)*3);x.drawImage(OBS.coin[cf].c,Math.round(sx),Math.round(sy));}
+  for(const o of G.obs){const S=o.type==='pigeon'?OBS.pigeon[Math.floor(clock*8)%2]:OBS[o.type],sx=Math.round((o.wx-G.dist)*K),sy=Math.round((GROUND-o.lift-o.h)*K);
+    if(!o.lift){x.fillStyle='rgba(25,15,30,.2)';x.fillRect(sx+4,GROUND*K-4,S.w*K-8,5);}
+    x.drawImage(S.c,sx,sy);}
+  const feet=GROUND-G.y;let f=-1;
+  if(G.state==='play'){f=G.y>.01?(G.vy>0?7:1):Math.floor(G.anim*13)%8;}
+  const sw=Math.max(18,48-G.y*2.2);x.fillStyle='rgba(25,15,30,.22)';x.fillRect(Math.round((P_X+9.5)*K-sw/2),GROUND*K-4,sw,6);
+  x.drawImage(renderSprite(cfg,f,k),P_X*K,Math.round((feet-(FOOT-1)/2)*K));
+  if(G.state==='over'){const hx=(P_X+9.5)*K,hy=(feet-19)*K;for(let i=0;i<3;i++){const a=clock*4+i*2.09,sx=Math.round(hx+Math.cos(a)*30),sy=Math.round(hy+Math.sin(a)*10);x.fillStyle='#ffe066';x.fillRect(sx-2,sy-6,4,12);x.fillRect(sx-6,sy-2,12,4);}}
+  // 점수판
+  x.textBaseline='top';x.textAlign='right';x.font='700 26px Silkscreen,monospace';
+  x.fillStyle='rgba(20,14,24,.55)';x.fillText('SCORE '+G.score,1006,20);x.fillStyle='#fff';x.fillText('SCORE '+G.score,1003,17);
+  x.font='700 18px Silkscreen,monospace';x.fillStyle='rgba(20,14,24,.55)';x.fillText('BEST '+getBest(),1006,52);x.fillStyle='#ffe066';x.fillText('BEST '+getBest(),1003,49);
+  x.textAlign='left';x.drawImage(OBS.coin[0].c,19,52,27,27);x.font='700 20px Silkscreen,monospace';x.fillStyle='rgba(20,14,24,.55)';x.fillText('× '+G.coins,55,57);x.fillStyle='#fff';x.fillText('× '+G.coins,53,55);
+  if(G.state==='ready'){
+    box(x,560,240,700,250);x.textAlign='center';
+    x.fillStyle='#ffe066';x.font='44px "Do Hyeon",sans-serif';x.fillText('장애물 달리기',560,138);
+    x.fillStyle='#fff';x.font='26px "Do Hyeon",sans-serif';
+    ['화면을 탭하거나 스페이스바를 누르면 출발!','공중에서 한 번 더 누르면 2단 점프','비둘기가 날아오면 점프하지 말고 그대로 달리기','성돌 동전을 모으면 +10점'].forEach((t,i)=>x.fillText(t,560,200+i*38));
+    x.textAlign='left';
+  }else if(G.state==='play'&&!running){box(x,512,200,300,90);x.textAlign='center';x.fillStyle='#fff';x.font='36px "Do Hyeon",sans-serif';x.fillText('일시정지',512,182);x.textAlign='left';}
+  x.textBaseline='alphabetic';
+}
+function showGO(){
+  $('#goScore').textContent=G.score;
+  $('#goSub').textContent=(G.newBest?'최고 기록 달성! · ':'최고 기록 '+getBest()+'점 · ')+'성돌 '+G.coins+'개';
+  $('#goName').value=cfg.name.trim();$('#goRegBtn').disabled=false;$('#goRegBtn').textContent='랭킹 등록';
+  $('#goPanel').hidden=false;
+}
+function hideGO(){const p=$('#goPanel');if(p)p.hidden=true;}
+function registerRank(){
+  if(!G||G.state!=='over')return;
+  const name=$('#goName').value.trim().slice(0,6);
+  if(!name){toast('랭킹에 올릴 이름을 적어 주세요');$('#goName').focus();return;}
+  const entry={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,num:cfg.num,score:G.score,coins:G.coins,cfg:{...cfg,name},at:Date.now()};
+  ranks.push(entry);ranks.sort((a,b)=>b.score-a.score||a.at-b.at);if(ranks.length>50)ranks.length=50;saveRanks();
+  const pos=ranks.findIndex(r=>r.id===entry.id)+1;
+  $('#goRegBtn').disabled=true;$('#goRegBtn').textContent=pos?pos+'위 등록 완료':'등록 완료';
+  renderRanks();toast(pos&&pos<=10?`${name} 러너, 오늘의 랭킹 ${pos}위!`:`${name} 러너의 기록을 저장했어요`);
+}
+function renderRanks(){
+  const ol=$('#rankList');ol.innerHTML='';
+  if(!ranks.length){ol.innerHTML='<li class="empty">아직 기록이 없어요. 장애물 달리기로 첫 기록을 남겨 보세요!</li>';return;}
+  ranks.slice(0,10).forEach((r,i)=>{const li=document.createElement('li');li.className='rk'+(i<3?' top'+(i+1):'');
+    const n=document.createElement('span');n.className='rk-n';n.textContent=i+1;
+    const cv=mk(GW*2,GH*2);cv.getContext('2d').drawImage(renderSprite(r.cfg,-1,2),0,0);cv.className='rk-c';
+    const nm=document.createElement('span');nm.className='rk-name';nm.textContent=r.name+(r.num?' · '+r.num:'');
+    const sc=document.createElement('span');sc.className='rk-s';sc.textContent=r.score+'점';
+    li.append(n,cv,nm,sc);ol.appendChild(li);});
+}
+function toggleGame(){if(mode==='game'){setMode('edit');return;}setMode('game');if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();$('#stageBox').scrollIntoView({behavior:'smooth',block:'center'});}
+stage.addEventListener('pointerdown',e=>{if(mode==='game'){e.preventDefault();jump();}});
+document.addEventListener('keydown',e=>{
+  if(mode!=='game')return;const tg=e.target;if(tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'))return;
+  if(e.code==='Space'||e.key===' '||e.key==='ArrowUp'){e.preventDefault();jump();}
+});
+$('#goRetry').onclick=retry;$('#goRegBtn').onclick=registerRank;
+$('#goName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();registerRank();}});
+$('#gameBtn').onclick=toggleGame;$('#gameBtn2').onclick=toggleGame;
+$('#rankClear').onclick=()=>{if(!ranks.length){toast('지울 기록이 없어요');return;}askConfirm('랭킹 기록을 모두 지울까요?','이 기기에 저장된 장애물 달리기 기록이 모두 사라져요. 되돌릴 수 없어요.','모두 지우기',()=>{ranks=[];saveRanks();setBest(0);renderRanks();toast('랭킹을 비웠어요');});};
+
 /* ---------- 루프 ---------- */
 function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;clock+=dt;
-  if(running){animT+=dt;scroll+=dt*26;paradeT+=dt;}
+  if(mode==='game'&&G){if(running)updateGame(dt);if(running)animT+=dt;scroll=G.dist;}
+  else if(running){animT+=dt;scroll+=dt*26;paradeT+=dt;}
   drawStage();
   const tf=running?Math.floor(animT*11)%8:-1;if(tf!==lastThumb){lastThumb=tf;drawThumbs(tf);}
   requestAnimationFrame(loop);
 }
-buildControls();sync();syncTheme();renderGallery();setMode('edit');
+buildControls();sync();syncTheme();renderGallery();renderRanks();setMode('edit');
 if(document.fonts){Promise.all(['20px "Black Han Sans"','20px "Do Hyeon"','14px Silkscreen','700 14px Silkscreen'].map(f=>document.fonts.load(f).catch(()=>{}))).then(()=>{spriteCache.clear();textCache.clear();lastThumb=null;});}
 requestAnimationFrame(loop);
 })();
