@@ -612,7 +612,7 @@ function makeCard(){
   x.fillStyle='rgba(22,16,30,.88)';x.fillRect(0,H-96,W,96);x.fillStyle='#ffe066';x.fillRect(0,H-96,W,6);
   x.fillStyle='#fff';x.font='700 32px Silkscreen,monospace';x.fillText('RUN, LEARN HANSU!',48,H-34);
   const d=new Date(),ds=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
-  x.font='34px "Do Hyeon",sans-serif';x.textAlign='right';x.fillText(`한양도성 · ${ds}`,W-48,H-34);x.textAlign='left';
+  x.font='34px "Do Hyeon",sans-serif';x.textAlign='right';x.fillText(`한양의 수도성곽 · ${ds}`,W-48,H-34);x.textAlign='left';
   return c.toDataURL('image/png');
 }
 let lastFocus=null;
