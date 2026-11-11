@@ -70,6 +70,10 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
 .rk-c{width:40px;height:auto;image-rendering:pixelated}
 .rk-name{font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rk-s{font-family:'Silkscreen',monospace;font-weight:700;font-size:20px}
+.rk-name small{display:block;font-size:14px;opacity:.6}
+.rank-mode{display:inline-block;font-size:15px;vertical-align:middle;margin-left:8px;padding:3px 8px;border:2px solid var(--ink);background:#fff}
+.rank-mode.on{background:var(--green);color:#fff}
+.rank-note{margin:0 0 12px;font-size:16px;opacity:.75}
 .rank .empty{list-style:none}
 #stage.playing{cursor:pointer;touch-action:none}
 
@@ -187,12 +191,13 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
 <div class="wrap" style="padding-top:0">
   <section class="box gallery" style="margin-top:0">
     <div class="ghead">
-      <h2>장애물 달리기 랭킹 TOP 10</h2>
+      <h2>장애물 달리기 랭킹 TOP 10 <span class="rank-mode" id="rankMode">이 기기</span></h2>
       <div class="gbtns">
         <button class="btn primary" id="gameBtn2" type="button">장애물 달리기 하기</button>
         <button class="btn" id="rankClear" type="button">랭킹 비우기</button>
       </div>
     </div>
+    <p class="rank-note" id="rankNote"></p>
     <ol class="rank" id="rankList"></ol>
   </section>
 </div>
@@ -253,7 +258,7 @@ const ACCS=[['none','없음'],['band','헤어밴드'],['cap','러닝캡'],['glas
 const BIBS=[['bib','배번표 달기'],['print','옷에 바로 프린트']];
 
 let cfg={skin:SKINS[1],eye:'dot',hairStyle:'pony',hairColor:HAIRC[1],top:'tee',topColor:'#e5484d',bottom:'shorts',bottomColor:'#233a6b',shoeColor:'#f4f4ef',acc:'band',accColor:'#f5c518',bibStyle:'bib',name:'',num:'2026'};
-const KEYS=Object.keys(cfg);
+const KEYS=Object.keys(cfg);const CFG0={...cfg};
 const cfgKey=c=>KEYS.map(k=>c[k]).join('|');
 
 /* ---------- 도트 그리기 도구 ---------- */
@@ -702,6 +707,8 @@ const OBS={};
   OBS.coin=[coin(true),coin(false)];
 })();
 
+// 구글 Apps Script 웹 앱 주소. 비워 두면 이 기기 랭킹만 씁니다.
+const RANK_API='https://script.google.com/macros/s/AKfycbz3rv0vINQMP9FB0_X-aEN-zI1bJ_InmreBF1uB_hZDbRefcoo-R2EIho_v5WvbODFk8Q/exec';
 const P_X=12, GROUND=66, GRAV=260, J1=82, J2=70, BEST_KEY='hansu-runner-best', RANK_KEY='hansu-runner-rank-v1';
 let G=null;
 let ranks=[];try{ranks=JSON.parse(localStorage.getItem(RANK_KEY)||'[]');if(!Array.isArray(ranks))ranks=[];}catch(e){ranks=[];}
@@ -711,7 +718,7 @@ function setBest(v){try{localStorage.setItem(BEST_KEY,String(v));}catch(e){}}
 function newGame(){G={state:'ready',y:0,vy:0,jumps:0,t:0,dist:0,speed:42,coins:0,obs:[],items:[],nextAt:46,score:0,anim:0,overT:0,newBest:false};hideGO();}
 function jump(){
   if(mode!=='game'||!G)return;
-  if(G.state==='ready'){G.state='play';G.vy=J1;G.jumps=1;return;}
+  if(G.state==='ready'){G.state='play';G.vy=J1;G.jumps=1;startSession();return;}
   if(G.state==='over'){if(G.overT>.6)retry();return;}
   if(!running)return;
   if(G.jumps===0){G.vy=J1;G.jumps=1;}else if(G.jumps<2){G.vy=J2;G.jumps=2;}
@@ -743,8 +750,8 @@ function updateGame(dt){
     const b={x0:sx+ins,x1:sx+o.w-ins,y0:GROUND-o.lift-o.h+ins,y1:GROUND-o.lift-.3};
     if(pb.x0<b.x1&&pb.x1>b.x0&&pb.y0<b.y1&&pb.y1>b.y0){crash();break;}}
 }
-function crash(){G.state='over';G.overT=0;const best=getBest();G.newBest=G.score>best;if(G.newBest)setBest(G.score);showGO();}
-function retry(){newGame();G.state='play';}
+function crash(){G.state='over';G.overT=0;fetchTop();const best=getBest();G.newBest=G.score>best;if(G.newBest)setBest(G.score);showGO();}
+function retry(){newGame();G.state='play';startSession();}
 function box(x,cx,cy,w,h){x.fillStyle='rgba(20,14,26,.82)';x.fillRect(cx-w/2,cy-h/2,w,h);x.fillStyle='#ffe066';x.fillRect(cx-w/2,cy-h/2,w,6);}
 function drawGame(x){
   const k=4,cf=Math.floor(clock*6)%2;
@@ -778,26 +785,71 @@ function showGO(){
   $('#goPanel').hidden=false;
 }
 function hideGO(){const p=$('#goPanel');if(p)p.hidden=true;}
+function cfgOnly(c){const o={};for(const k of KEYS)if(k!=='name'&&k!=='num')o[k]=c[k];return o;}
 function registerRank(){
   if(!G||G.state!=='over')return;
   const name=$('#goName').value.trim().slice(0,6);
   if(!name){toast('랭킹에 올릴 이름을 적어 주세요');$('#goName').focus();return;}
-  const entry={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,num:cfg.num,score:G.score,coins:G.coins,cfg:{...cfg,name},at:Date.now()};
+  const g=G,btn=$('#goRegBtn');
+  // 이 기기에도 항상 백업 저장
+  const entry={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,num:cfg.num,score:g.score,coins:g.coins,cfg:{...cfg,name},at:Date.now()};
   ranks.push(entry);ranks.sort((a,b)=>b.score-a.score||a.at-b.at);if(ranks.length>50)ranks.length=50;saveRanks();
-  const pos=ranks.findIndex(r=>r.id===entry.id)+1;
-  $('#goRegBtn').disabled=true;$('#goRegBtn').textContent=pos?pos+'위 등록 완료':'등록 완료';
-  renderRanks();toast(pos&&pos<=10?`${name} 러너, 오늘의 랭킹 ${pos}위!`:`${name} 러너의 기록을 저장했어요`);
+  const localPos=ranks.findIndex(r=>r.id===entry.id)+1;
+  btn.disabled=true;
+  if(!RANK_API||!g.sid){
+    btn.textContent=localPos?'이 기기 '+localPos+'위 저장':'저장 완료';renderRanks();
+    toast(RANK_API?'온라인 랭킹에 연결하지 못해 이 기기에만 저장했어요':`${name} 러너, 이 기기 랭킹 ${localPos}위!`);return;
+  }
+  btn.textContent='등록 중…';
+  const payload={action:'submit',sid:g.sid,name,num:cfg.num,score:g.score,coins:g.coins,cfg:cfgOnly(cfg)};
+  g.sid=null;
+  sendScore(payload).then(d=>{
+    if(d.ok){online.ok=true;online.top=d.top||online.top;btn.textContent='전체 '+d.rank+'위 등록 완료';renderRanks();toast(d.rank<=10?`${name} 러너, 전체 랭킹 ${d.rank}위!`:`${name} 러너, 전체 ${d.rank}위로 등록했어요`);}
+    else{btn.textContent='등록 실패';toast(d.error||'등록하지 못했어요');}
+  }).catch(()=>{
+    queuePending(payload);btn.textContent='연결되면 자동 등록';renderRanks();
+    toast('인터넷이 불안정해 이 기기에 보관했어요. 연결되면 자동으로 올라가요');
+  });
 }
 function renderRanks(){
   const ol=$('#rankList');ol.innerHTML='';
-  if(!ranks.length){ol.innerHTML='<li class="empty">아직 기록이 없어요. 장애물 달리기로 첫 기록을 남겨 보세요!</li>';return;}
-  ranks.slice(0,10).forEach((r,i)=>{const li=document.createElement('li');li.className='rk'+(i<3?' top'+(i+1):'');
+  const useOnline=!!RANK_API&&online.ok;
+  const list=useOnline?online.top.map(r=>({...r,cfg:{...CFG0,...(r.cfg||{}),name:r.name,num:r.num||''}})):ranks.slice(0,10).map(r=>({...r,t:fmtTime(r.at)}));
+  const mode=$('#rankMode');mode.textContent=useOnline?'모든 기기 통합':'이 기기';mode.classList.toggle('on',useOnline);
+  const pend=pendingCount();
+  $('#rankNote').textContent=useOnline?('각자 휴대폰에서 한 기록도 함께 모여요. 30초마다 새로고침돼요.'+(pend?` (전송 대기 ${pend}건)`:'')):(RANK_API?'온라인 랭킹에 연결하지 못해 이 기기 기록만 보여요.'+(pend?` 전송 대기 ${pend}건은 연결되면 자동으로 올라가요.`:''):'이 기기에서 한 기록만 보여요.');
+  $('#rankClear').hidden=useOnline;
+  if(!list.length){ol.innerHTML='<li class="empty">아직 기록이 없어요. 장애물 달리기로 첫 기록을 남겨 보세요!</li>';return;}
+  list.slice(0,10).forEach((r,i)=>{const li=document.createElement('li');li.className='rk'+(i<3?' top'+(i+1):'');
     const n=document.createElement('span');n.className='rk-n';n.textContent=i+1;
     const cv=mk(GW*2,GH*2);cv.getContext('2d').drawImage(renderSprite(r.cfg,-1,2),0,0);cv.className='rk-c';
     const nm=document.createElement('span');nm.className='rk-name';nm.textContent=r.name+(r.num?' · '+r.num:'');
+    if(r.t){const sm=document.createElement('small');sm.textContent=r.t;nm.appendChild(sm);}
     const sc=document.createElement('span');sc.className='rk-s';sc.textContent=r.score+'점';
     li.append(n,cv,nm,sc);ol.appendChild(li);});
 }
+function fmtTime(ms){if(!ms)return'';const d=new Date(ms),p=v=>String(v).padStart(2,'0');return `${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;}
+
+/* ---------- 온라인 랭킹 (구글 시트 + Apps Script) ---------- */
+const PEND_KEY='hansu-runner-pending-v1';
+let online={ok:false,top:[]};
+function apiGet(action){return fetch(RANK_API+'?action='+action,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('http');return r.json();});}
+function sendScore(payload){return fetch(RANK_API,{method:'POST',body:JSON.stringify(payload)}).then(r=>{if(!r.ok)throw new Error('http');return r.json();});}
+function startSession(tries){if(!RANK_API||!G)return;const g=G,n=tries||0;apiGet('start').then(d=>{if(d&&d.ok)g.sid=d.sid;else throw 0;}).catch(()=>{if(n<6&&G===g&&g.state==='play')setTimeout(()=>{if(G===g&&g.state==='play'&&!g.sid)startSession(n+1);},3000);});}
+function fetchTop(){if(!RANK_API)return;apiGet('top').then(d=>{if(d&&d.ok){online.ok=true;online.top=d.top||[];renderRanks();}}).catch(()=>{if(online.ok){online.ok=false;renderRanks();}else if(!online.tried)renderRanks();}).finally(()=>{online.tried=true;});}
+function getPending(){try{const a=JSON.parse(localStorage.getItem(PEND_KEY)||'[]');return Array.isArray(a)?a:[];}catch(e){return[];}}
+function setPending(a){try{localStorage.setItem(PEND_KEY,JSON.stringify(a));}catch(e){}}
+function pendingCount(){return getPending().length;}
+function queuePending(p){const a=getPending();a.push({...p,queuedAt:Date.now()});setPending(a.slice(-20));}
+let flushing=false;
+function flushPending(){
+  if(!RANK_API||flushing)return;let a=getPending().filter(p=>Date.now()-p.queuedAt<55*60*1000);setPending(a);if(!a.length)return;
+  flushing=true;const p=a[0];
+  sendScore(p).then(d=>{setPending(getPending().filter(x=>x.sid!==p.sid));if(d.ok){online.ok=true;online.top=d.top||online.top;toast(`보관해 둔 ${p.name} 러너 기록을 올렸어요 (전체 ${d.rank}위)`);}renderRanks();})
+    .catch(()=>{}).finally(()=>{flushing=false;});
+}
+if(RANK_API){fetchTop();flushPending();setInterval(()=>{if(document.visibilityState==='visible'){fetchTop();flushPending();}},30000);
+  addEventListener('online',()=>{fetchTop();flushPending();});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')fetchTop();});}
 function toggleGame(){if(mode==='game'){setMode('edit');return;}setMode('game');if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();$('#stageBox').scrollIntoView({behavior:'smooth',block:'center'});}
 stage.addEventListener('pointerdown',e=>{if(mode==='game'){e.preventDefault();jump();}});
 document.addEventListener('keydown',e=>{
